@@ -2361,7 +2361,7 @@ if (currentYear >= 10) {
 					</Parameters>
 					<ReplicationFlag>true</ReplicationFlag>
 					<Replication Class="CodeValue">
-						<Code><![CDATA[71]]></Code><!-- CE3.0 Phase 3: 66 dedicated (1/provider) + 5 jolly -->
+						<Code><![CDATA[5]]></Code>
 					</Replication>
 					<CollectionType>ARRAY_LIST_BASED</CollectionType>
 					<InEnvironment>true</InEnvironment>
@@ -2513,7 +2513,7 @@ if (currentYear >= 10) {
 					</Parameters>
 					<ReplicationFlag>true</ReplicationFlag>
 					<Replication Class="CodeValue">
-						<Code><![CDATA[5]]></Code>
+						<Code><![CDATA[71]]></Code><!-- CE3.0 Phase 3: 66 dedicated (1/provider) + 5 jolly -->
 					</Replication>
 					<CollectionType>ARRAY_LIST_BASED</CollectionType>
 					<InEnvironment>true</InEnvironment>
@@ -11531,7 +11531,7 @@ isJolly = (truckIndex >= 66);
 myProviderIndex = isJolly ? -1 : truckIndex;
 // All trucks start at BIWASE; Main startup will reposition dedicated trucks after providers are initialized
 jumpTo(main.intermediateLat, main.intermediateLon);
-lorry.setVisible(false);]]></StartupCode>
+// CE3.0 Phase 3: lorry always visible (user requirement)]]></StartupCode>
 			<Generic>false</Generic>
 			<GenericParameter>
 				<Id>1773637505384</Id>
@@ -11747,7 +11747,7 @@ lorry.setVisible(false);]]></StartupCode>
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="100" Height="30">
 						<EntryAction><![CDATA[busy = false;
-lorry.setVisible(false);
+// CE3.0 Phase 3: lorry always visible — removed setVisible(false)
 // Notify dispatching Provider that transport is complete
 if (sourceProvider != null) {
     Provider p = (Provider) sourceProvider;
