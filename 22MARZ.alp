@@ -4366,6 +4366,22 @@ MaterialType.PLASTIC_SCRAP]]></Code>
 						</ParameterEditor>
 					</Properties>                 
 				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9991000000005</Id>
+					<Name><![CDATA[isReturning]]></Name>
+					<Description><![CDATA[CE3.0: true when a jolly truck has picked up and is on the return leg to BIWASE.]]></Description>
+					<X>50</X><Y>610</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[boolean]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[false]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 			</Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -11755,7 +11771,8 @@ if (isJolly) {
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="100" Height="30">
 						<EntryAction><![CDATA[busy = false;
-lorry.setVisible(false); // lorry hides at home; truckMarker circle stays visible
+lorry.setVisible(false);
+isReturning = false;
 // Notify dispatching Provider that transport is complete
 if (sourceProvider != null) {
     Provider p = (Provider) sourceProvider;
@@ -11763,12 +11780,10 @@ if (sourceProvider != null) {
     p.assignedTruckID = -1;
     sourceProvider = null;
 }
-// CE3.0 Phase 3: return to home position
-if (isJolly) {
-    jumpTo(main.intermediateLat, main.intermediateLon);
-} else if (myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
+// CE3.0: dedicated trucks drive back to provider; jolly trucks already at BIWASE
+if (!isJolly && myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
     Provider home_p = (Provider) main.providers.get(myProviderIndex);
-    jumpTo(home_p.providerLat, home_p.providerLon);
+    moveTo(home_p.providerLat, home_p.providerLon);  // return empty
 }]]></EntryAction>
 						<FillColor/>
 					</Properties>
@@ -11784,8 +11799,13 @@ if (isJolly) {
 					<Properties Width="100" Height="30">
 						<EntryAction><![CDATA[busy = true;
 lorry.setVisible(true);
-jumpTo(targetLat, targetLon);
-moveTo(main.intermediateLat, main.intermediateLon);]]></EntryAction>
+isReturning = false;
+// CE3.0: dedicated trucks drive provider→BIWASE; jolly trucks drive BIWASE→provider first
+if (isJolly) {
+    moveTo(targetLat, targetLon);  // outbound: BIWASE → provider
+} else {
+    moveTo(main.intermediateLat, main.intermediateLon);  // loaded: provider → BIWASE
+}]]></EntryAction>
 						<FillColor/>
 					</Properties>
 				</StatechartElement>
@@ -11835,6 +11855,40 @@ moveTo(main.intermediateLat, main.intermediateLon);]]></EntryAction>
 					</Properties>	
 				</StatechartElement>
 				<StatechartElement Class="Transition" ParentState="ROOT_NODE">
+					<Id>9990000000015</Id>
+					<Name><![CDATA[t_loaded]]></Name>
+					<X>500</X><Y>240</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>60</X><Y>0</Y></Point>
+						<Point><X>60</X><Y>30</Y></Point>
+						<Point><X>0</X><Y>30</Y></Point>
+					</Points>
+					<IconOffset>30.0</IconOffset>
+					<Properties Source="9990000000012" Target="9990000000012" Trigger="arrival">
+						<Timeout Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
+						</Timeout>
+						<Condition><![CDATA[isJolly && !isReturning]]></Condition>
+						<Rate Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit>
+						</Rate>
+						<MessageType><![CDATA[Object]]></MessageType>
+						<DefaultTransition>false</DefaultTransition>
+						<FilterType><![CDATA[unconditionally]]></FilterType>
+						<EqualsExpression><![CDATA["text"]]></EqualsExpression>
+						<SatisfiesExpression><![CDATA[true]]></SatisfiesExpression>
+						<ActionCode><![CDATA[isReturning = true;
+moveTo(main.intermediateLat, main.intermediateLon);  // return leg: provider → BIWASE]]></ActionCode>
+					</Properties>
+				</StatechartElement>
+				<StatechartElement Class="Transition" ParentState="ROOT_NODE">
 					<Id>9990000000014</Id>
 					<Name><![CDATA[t_arrived]]></Name>
 					<X>450</X><Y>260</Y>
@@ -11854,7 +11908,7 @@ moveTo(main.intermediateLat, main.intermediateLon);]]></EntryAction>
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
 						</Timeout>
-						<Condition><![CDATA[true]]></Condition>
+						<Condition><![CDATA[!isJolly || isReturning]]></Condition>
 						<Rate Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit>
@@ -11963,7 +12017,7 @@ moveTo(main.intermediateLat, main.intermediateLon);]]></EntryAction>
 					<PublicFlag>true</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
 					<EmbeddedIcon>false</EmbeddedIcon>
 					<Z>0</Z>
 					<ZHeight>10</ZHeight>
