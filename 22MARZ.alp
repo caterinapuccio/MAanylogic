@@ -793,6 +793,21 @@ for (int i = 0; i < providers.size(); i++) {
         + " supply=" + String.format("%.2f", p.avgSupplyFromExcel) + " t/week");
 }
 
+// ─── 6b. Reposition dedicated GarbageTruck agents to their provider's location ─
+// CE3.0 Phase 3: trucks 0-65 are dedicated to providers 0-65.
+// GarbageTruck startup placed all trucks at BIWASE (safe default).
+// Now that providers are initialized, move each dedicated truck to its provider.
+for (int i = 0; i < providers.size() && i < garbageTrucks.size(); i++) {
+    GarbageTruck gt = garbageTrucks.get(i);
+    if (!gt.isJolly) {
+        Provider pp = providers.get(i);
+        gt.jumpTo(pp.providerLat, pp.providerLon);
+    }
+}
+traceln("CE3.0 Fleet: " + providers.size() + " dedicated trucks + "
+    + (garbageTrucks.size() - providers.size()) + " jolly trucks = "
+    + garbageTrucks.size() + " total");
+
 // ─── 7. Initialize Receivers from Companies_Listing (rows 68-72) ────────────
 // Row 68=Plastic, 69=Paper, 70=Ferrous, 71=Textile, 72=NonFerrous
 // (Rows shifted −1 after Lotteria deletion from provider list)
@@ -2346,7 +2361,7 @@ if (currentYear >= 10) {
 					</Parameters>
 					<ReplicationFlag>true</ReplicationFlag>
 					<Replication Class="CodeValue">
-						<Code><![CDATA[5]]></Code>
+						<Code><![CDATA[71]]></Code><!-- CE3.0 Phase 3: 66 dedicated (1/provider) + 5 jolly -->
 					</Replication>
 					<CollectionType>ARRAY_LIST_BASED</CollectionType>
 					<InEnvironment>true</InEnvironment>
@@ -10426,16 +10441,24 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
         distKm,                        // distance to intermediate (km)
         tCost                          // transport cost charged to intermediate (SGD)
     });
-    // Dispatch a truck for visual animation (cosmetic, Finneiss-style)
-    // The Intermediate orchestrates collection: it finds a free truck and
-    // sends it to the Provider's location immediately upon booking acceptance.
-    for (GarbageTruck t : main.garbageTrucks) {
-        if (!t.busy) {
-            t.targetLat = prov.providerLat;
-            t.targetLon = prov.providerLon;
-            t.sourceProvider = prov;
-            send("Go", t);
-            break;
+    // CE3.0 Phase 3: dispatch — dedicated truck first, fall back to jolly pool
+    {
+        GarbageTruck truck = null;
+        int pIdx = prov.getIndex();
+        if (pIdx >= 0 && pIdx < main.garbageTrucks.size()) {
+            GarbageTruck dedicated = main.garbageTrucks.get(pIdx);
+            if (!dedicated.busy) truck = dedicated;
+        }
+        if (truck == null) {
+            for (GarbageTruck t : main.garbageTrucks) {
+                if (t.isJolly && !t.busy) { truck = t; break; }
+            }
+        }
+        if (truck != null) {
+            truck.targetLat = prov.providerLat;
+            truck.targetLon = prov.providerLon;
+            truck.sourceProvider = prov;
+            send("Go", truck);
         }
     }
     return true;
@@ -10468,16 +10491,24 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
         distKm,
         tCost
     });
-    // Dispatch a truck for visual animation (cosmetic, Finneiss-style)
-    // The Intermediate orchestrates collection: it finds a free truck and
-    // sends it to the Provider's location immediately upon booking acceptance.
-    for (GarbageTruck t : main.garbageTrucks) {
-        if (!t.busy) {
-            t.targetLat = prov.providerLat;
-            t.targetLon = prov.providerLon;
-            t.sourceProvider = prov;
-            send("Go", t);
-            break;
+    // CE3.0 Phase 3: dispatch — dedicated truck first, fall back to jolly pool
+    {
+        GarbageTruck truck = null;
+        int pIdx = prov.getIndex();
+        if (pIdx >= 0 && pIdx < main.garbageTrucks.size()) {
+            GarbageTruck dedicated = main.garbageTrucks.get(pIdx);
+            if (!dedicated.busy) truck = dedicated;
+        }
+        if (truck == null) {
+            for (GarbageTruck t : main.garbageTrucks) {
+                if (t.isJolly && !t.busy) { truck = t; break; }
+            }
+        }
+        if (truck != null) {
+            truck.targetLat = prov.providerLat;
+            truck.targetLon = prov.providerLon;
+            truck.sourceProvider = prov;
+            send("Go", truck);
         }
     }
     return true;
@@ -11495,6 +11526,10 @@ return false;]]></Body>
 			<Id>1773637505379</Id>
 			<Name><![CDATA[GarbageTruck]]></Name>
 			<StartupCode><![CDATA[truckIndex = getIndex();
+// CE3.0 Phase 3: dedicated trucks (0-65) own their provider; jolly trucks (66-70) are shared pool
+isJolly = (truckIndex >= 66);
+myProviderIndex = isJolly ? -1 : truckIndex;
+// All trucks start at BIWASE; Main startup will reposition dedicated trucks after providers are initialized
 jumpTo(main.intermediateLat, main.intermediateLon);
 lorry.setVisible(false);]]></StartupCode>
 			<Generic>false</Generic>
@@ -11668,6 +11703,38 @@ lorry.setVisible(false);]]></StartupCode>
 						</InitialValue>
 					</Properties>
 				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9991000000003</Id>
+					<Name><![CDATA[isJolly]]></Name>
+					<Description><![CDATA[CE3.0 Phase 3: true if this is a shared jolly truck (truckIndex >= 66). false = dedicated to one provider.]]></Description>
+					<X>50</X><Y>450</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[boolean]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[false]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9991000000004</Id>
+					<Name><![CDATA[myProviderIndex]]></Name>
+					<Description><![CDATA[CE3.0 Phase 3: index of the dedicated provider (= truckIndex for 0-65). -1 for jolly trucks.]]></Description>
+					<X>50</X><Y>530</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[int]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[-1]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 			</Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -11687,6 +11754,13 @@ if (sourceProvider != null) {
     p.isTransporting = false;
     p.assignedTruckID = -1;
     sourceProvider = null;
+}
+// CE3.0 Phase 3: return to home position
+if (isJolly) {
+    jumpTo(main.intermediateLat, main.intermediateLon);
+} else if (myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
+    Provider home_p = (Provider) main.providers.get(myProviderIndex);
+    jumpTo(home_p.providerLat, home_p.providerLon);
 }]]></EntryAction>
 						<FillColor/>
 					</Properties>
