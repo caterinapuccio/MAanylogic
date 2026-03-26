@@ -10458,6 +10458,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.targetLat = prov.providerLat;
             truck.targetLon = prov.providerLon;
             truck.sourceProvider = prov;
+            prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
             send("Go", truck);
         }
     }
@@ -10508,6 +10509,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.targetLat = prov.providerLat;
             truck.targetLon = prov.providerLon;
             truck.sourceProvider = prov;
+            prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
             send("Go", truck);
         }
     }
