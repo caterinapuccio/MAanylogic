@@ -4366,22 +4366,6 @@ MaterialType.PLASTIC_SCRAP]]></Code>
 						</ParameterEditor>
 					</Properties>                 
 				</Variable>
-				<Variable Class="PlainVariable">
-					<Id>9991000000005</Id>
-					<Name><![CDATA[isReturning]]></Name>
-					<Description><![CDATA[CE3.0: true when a jolly truck has picked up and is on the return leg to BIWASE.]]></Description>
-					<X>50</X><Y>610</Y>
-					<Label><X>10</X><Y>0</Y></Label>
-					<PublicFlag>false</PublicFlag>
-					<PresentationFlag>true</PresentationFlag>
-					<ShowLabel>true</ShowLabel>
-					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
-						<Type><![CDATA[boolean]]></Type>
-						<InitialValue Class="CodeValue">
-							<Code><![CDATA[false]]></Code>
-						</InitialValue>
-					</Properties>
-				</Variable>
 			</Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -11756,6 +11740,22 @@ if (isJolly) {
 						<Type><![CDATA[int]]></Type>
 						<InitialValue Class="CodeValue">
 							<Code><![CDATA[-1]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9991000000005</Id>
+					<Name><![CDATA[isReturning]]></Name>
+					<Description><![CDATA[CE3.0: true when jolly truck is on return leg (provider→BIWASE). false = outbound or at home.]]></Description>
+					<X>50</X><Y>610</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[boolean]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[false]]></Code>
 						</InitialValue>
 					</Properties>
 				</Variable>
