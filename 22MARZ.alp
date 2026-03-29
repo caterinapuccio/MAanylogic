@@ -866,7 +866,8 @@ intermediate.financialBalance  -= intCapex;
 intermediate.totalCosts        += intCapex;
 
 // ─── 9. Position EndOfLife on GIS map ────────────────────────────────────────
-landfill.jumpTo(endOfLifeLat, endOfLifeLon);
+// CE3.0 Phase 2: EndOfLife agent eliminated — landfill function absorbed by Intermediate.
+// landfill.jumpTo(endOfLifeLat, endOfLifeLon); // superseded
 
 // ─── 10. Network-level CAPEX ─────────────────────────────────────────────────
 totalCapex = intCapex;
@@ -2513,7 +2514,7 @@ if (currentYear >= 10) {
 					</Parameters>
 					<ReplicationFlag>true</ReplicationFlag>
 					<Replication Class="CodeValue">
-						<Code><![CDATA[71]]></Code><!-- CE3.0 Phase 3: 66 dedicated (1/provider) + 5 jolly -->
+						<Code><![CDATA[71]]></Code>
 					</Replication>
 					<CollectionType>ARRAY_LIST_BASED</CollectionType>
 					<InEnvironment>true</InEnvironment>
@@ -2805,7 +2806,7 @@ if (currentYear >= 10) {
 					</DataItem>
 					<DataItem>
 					<Id>1772016045328</Id>
-					<Expression><![CDATA[this.landfill.totalWasteReceived]]></Expression>
+					<Expression><![CDATA[this.intermediate.totalWasteReceived]]></Expression>
 					<Color>-8355712</Color>
 						<Title><![CDATA[Discarded Waste]]></Title>
 					</DataItem>
@@ -3968,7 +3969,7 @@ if (currentYear >= 10) {
 					<Id>8800000500010</Id>
 					<Name><![CDATA[supplyVariability]]></Name>
 					<Description><![CDATA[Coefficient of variation for weekly waste supply (fraction). Read from Companies_Listing col H. Normal distribution: normal(avgSupplyFromExcel, avgSupplyFromExcel * supplyVariability).]]></Description>
-					<X>70</X><Y>570</Y>
+					<X>280</X><Y>630</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -4372,7 +4373,7 @@ MaterialType.PLASTIC_SCRAP]]></Code>
 					<Id>9001000000001</Id>
 					<Name><![CDATA[Idle]]></Name>
 					<X>50</X><Y>80</Y>
-					<Label><X>10</X><Y>10</Y></Label>
+					<Label><X>45</X><Y>20</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -4404,7 +4405,7 @@ if (main.useIS) {
 					<Id>9001000000003</Id>
 					<Name><![CDATA[IS_Accepted]]></Name>
 					<X>270</X><Y>510</Y>
-					<Label><X>20</X><Y>35</Y></Label>
+					<Label><X>25</X><Y>40</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -4492,7 +4493,7 @@ main.totalExchanged += rawWaste;  // track total IS-exchanged material [tonnes]
 					<Id>9001000000004</Id>
 					<Name><![CDATA[IS_Rejected]]></Name>
 					<X>50</X><Y>510</Y>
-					<Label><X>30</X><Y>15</Y></Label>
+					<Label><X>30</X><Y>40</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -4502,7 +4503,7 @@ int matIdx = main.matIndex(myMaterial);
 double distEoL = main.haversineKm(providerLat, providerLon,
                                    main.endOfLifeLat, main.endOfLifeLon);
 double disposalCost = rawWaste * main.costLandfillPerMat[matIdx];
-main.landfill.totalWasteReceived += rawWaste;
+main.intermediate.totalWasteReceived += rawWaste;
 this.financialBalance            -= disposalCost;
 this.totalCosts                  += disposalCost;
 main.landfillCostPerMat[matIdx]  += disposalCost;
@@ -4536,7 +4537,7 @@ CEDNoIS += kgWasteR * main.CEDWasteToLandfill[matIdx];]]></EntryAction>
 					<Id>9001000000005</Id>
 					<Name><![CDATA[NonIS_Disposal]]></Name>
 					<X>-180</X><Y>510</Y>
-					<Label><X>10</X><Y>10</Y></Label>
+					<Label><X>10</X><Y>35</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -4546,7 +4547,7 @@ int matIdx = main.matIndex(myMaterial);
 double distEoL = main.haversineKm(providerLat, providerLon,
                                    main.endOfLifeLat, main.endOfLifeLon);
 double disposalCost = rawWaste * main.costLandfillPerMat[matIdx];
-main.landfill.totalWasteReceived += rawWaste;
+main.intermediate.totalWasteReceived += rawWaste;
 this.financialBalance            -= disposalCost;
 this.totalCosts                  += disposalCost;
 main.landfillCostPerMat[matIdx]  += disposalCost;
@@ -4890,7 +4891,7 @@ else return black;]]></Body>
 					<PublicFlag>true</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9911000000002</Id>
@@ -4980,7 +4981,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9911000000007</Id>
@@ -5070,7 +5071,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9911000000021</Id>
@@ -5160,7 +5161,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9931000000002</Id>
@@ -5250,7 +5251,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9931000000011</Id>
@@ -5340,7 +5341,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9931000000021</Id>
@@ -5420,7 +5421,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9931000000031</Id>
@@ -5500,7 +5501,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9931000000041</Id>
@@ -5580,7 +5581,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9911000000031</Id>
@@ -5670,7 +5671,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9911000000036</Id>
@@ -5760,7 +5761,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9911000000041</Id>
@@ -5851,7 +5852,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<BasicProperties Width="120" Height="35">
                         <EmbeddedIcon>false</EmbeddedIcon>	
 						<TextColor>-16777216</TextColor>
@@ -5872,7 +5873,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<BasicProperties Width="120" Height="35">
                         <EmbeddedIcon>false</EmbeddedIcon>	
 						<TextColor>-16777216</TextColor>
@@ -5893,7 +5894,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<BasicProperties Width="160" Height="35">
                         <EmbeddedIcon>false</EmbeddedIcon>	
 						<TextColor>-16777216</TextColor>
@@ -6807,7 +6808,7 @@ else return black;]]></Body>
 					<Id>9904000000021</Id>
 					<Name><![CDATA[totalResidueToEoL]]></Name>
 					<Description><![CDATA[Cumulative processing residue (tonnes) that could not be returned to Intermediate (storage full) and went directly to landfill.]]></Description>
-					<X>260</X><Y>-160</Y>
+					<X>260</X><Y>-200</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -6887,7 +6888,7 @@ else return black;]]></Body>
 					<Id>9904000000016</Id>
 					<Name><![CDATA[deltaFinancial_IS_vs_noIS]]></Name>
 					<Description><![CDATA[Receiver: cumulative material cost savings from IS vs all-virgin baseline (totalReceivedFromIS x (priceVirgin - priceSecondary)). Updated annually.]]></Description>
-					<X>380</X><Y>-140</Y>
+					<X>260</X><Y>-230</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -7068,7 +7069,7 @@ if (deliveredQty > 0) {
             this.GWPFromResidueTransport += eoLtGWP;
             main.networkTotalTransportCostISProcesses += eoLtCost;
             main.transportGWPISProcesses  += eoLtGWP;
-            main.landfill.totalWasteReceived += residueQty;
+            main.intermediate.totalWasteReceived += residueQty;
             main.landfillCostPerMat[matIdx] += disposalFee;
             this.totalResidueToEoL += residueQty;
             // LCA: process impact of landfill disposal for overflow residue
@@ -7169,7 +7170,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9912000000002</Id>
@@ -7249,7 +7250,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9912000000007</Id>
@@ -7329,7 +7330,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9921000000002</Id>
@@ -7419,7 +7420,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9921000000011</Id>
@@ -7509,7 +7510,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9921000000021</Id>
@@ -7599,7 +7600,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9921000000031</Id>
@@ -7689,7 +7690,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9921000000041</Id>
@@ -7780,7 +7781,7 @@ else return black;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<BasicProperties Width="160" Height="35">
                         <EmbeddedIcon>false</EmbeddedIcon>	
 						<TextColor>-16777216</TextColor>
@@ -9777,6 +9778,21 @@ else return black;]]></Body>
 						</InitialValue>
 					</Properties>
 				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>1774771884126</Id>
+					<Name><![CDATA[totalWasteReceived]]></Name>
+					<X>680</X><Y>-50</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 				<Variable Class="Parameter">
 					<Id>1773637910064</Id>
 					<Name><![CDATA[providerIncentive]]></Name>
@@ -10556,7 +10572,7 @@ for (int m = 0; m < nMat; m++) {
     // Process waste → EndOfLife
     if (processWaste > 0) {
         double pwCost = processWaste * main.costLandfillPerMat[m];
-        main.landfill.totalWasteReceived += processWaste;
+        main.intermediate.totalWasteReceived += processWaste;
         this.financialBalance -= pwCost;
         this.totalCosts += pwCost;
         main.landfillCostPerMat[m] += pwCost;
@@ -11325,7 +11341,7 @@ return false;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9913000000002</Id>
@@ -11415,7 +11431,7 @@ return false;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<AutoUpdate>true</AutoUpdate>
 					<RecurrenceProperties>
 						<Id>9913000000007</Id>
@@ -11721,7 +11737,7 @@ if (isJolly) {
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
 					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
-						<Type><![CDATA[boolean]]></Type>
+						<Type><![CDATA[boolean]]></Type>        
 						<InitialValue Class="CodeValue">
 							<Code><![CDATA[false]]></Code>
 						</InitialValue>
@@ -11737,7 +11753,7 @@ if (isJolly) {
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
 					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
-						<Type><![CDATA[int]]></Type>
+						<Type><![CDATA[int]]></Type>        
 						<InitialValue Class="CodeValue">
 							<Code><![CDATA[-1]]></Code>
 						</InitialValue>
@@ -11753,7 +11769,7 @@ if (isJolly) {
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
 					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
-						<Type><![CDATA[boolean]]></Type>
+						<Type><![CDATA[boolean]]></Type>        
 						<InitialValue Class="CodeValue">
 							<Code><![CDATA[false]]></Code>
 						</InitialValue>
@@ -11858,17 +11874,17 @@ if (isJolly) {
 					<Id>9990000000015</Id>
 					<Name><![CDATA[t_loaded]]></Name>
 					<X>450</X><Y>250</Y>
-					<Label><X>10</X><Y>0</Y></Label>
+					<Label><X>70</X><Y>5</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
 					<Points>
 						<Point><X>0</X><Y>0</Y></Point>
-						<Point><X>100</X><Y>0</Y></Point>
-						<Point><X>100</X><Y>10</Y></Point>
+						<Point><X>60</X><Y>0</Y></Point>
+						<Point><X>60</X><Y>10</Y></Point>
 						<Point><X>0</X><Y>10</Y></Point>
 					</Points>
-					<IconOffset>90.0</IconOffset>
+					<IconOffset>60.0</IconOffset>
 					<Properties Source="9990000000012" Target="9990000000012" Trigger="arrival">
 						<Timeout Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
@@ -11884,9 +11900,7 @@ if (isJolly) {
 						<FilterType><![CDATA[unconditionally]]></FilterType>
 						<EqualsExpression><![CDATA["text"]]></EqualsExpression>
 						<SatisfiesExpression><![CDATA[true]]></SatisfiesExpression>
-						<ActionCode><![CDATA[isReturning = true;
-moveTo(main.intermediateLat, main.intermediateLon);  // return leg: provider → BIWASE]]></ActionCode>
-					</Properties>
+					</Properties>	
 				</StatechartElement>
 				<StatechartElement Class="Transition" ParentState="ROOT_NODE">
 					<Id>9990000000014</Id>
@@ -11902,7 +11916,7 @@ moveTo(main.intermediateLat, main.intermediateLon);  // return leg: provider →
 						<Point><X>40</X><Y>-100</Y></Point>
 						<Point><X>0</X><Y>-100</Y></Point>
 					</Points>
-					<IconOffset>60.0</IconOffset>
+					<IconOffset>140.0</IconOffset>
 					<Properties Source="9990000000012" Target="9990000000011" Trigger="arrival">
 						<Timeout Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
@@ -12285,7 +12299,7 @@ moveTo(main.intermediateLat, main.intermediateLon);  // return leg: provider →
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<BasicProperties Width="130" Height="35">
                         <EmbeddedIcon>false</EmbeddedIcon>	
 						<TextColor>-16777216</TextColor>
@@ -14799,252 +14813,252 @@ copyToClipboard( s );]]></ActionCode>
 						<LabelText><![CDATA[Copy best]]></LabelText>
 					</ExtendedProperties>
 				</Control>
-			<Line>
-				<Id>1773335603840</Id>
-				<Name><![CDATA[line3]]></Name>
-				<X>250</X><Y>70</Y>
-				<Label><X>10</X><Y>0</Y></Label>
-				<PublicFlag>true</PublicFlag>
-				<PresentationFlag>true</PresentationFlag>
-				<ShowLabel>false</ShowLabel>
-				<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
-				<EmbeddedIcon>false</EmbeddedIcon>
-				<Z>0</Z>
-				<ZHeight>10</ZHeight>
-				<LineWidth>1</LineWidth>
-				<LineColor>-4144960</LineColor>
-				<LineMaterial>null</LineMaterial>
-				<LineStyle>SOLID</LineStyle>
-				<BeginArrowSize>1</BeginArrowSize>
-				<BeginArrowStyle>0</BeginArrowStyle>
-				<EndArrowSize>1</EndArrowSize>
-				<EndArrowStyle>0</EndArrowStyle>
-				<Dx>0</Dx>
-				<Dy>820</Dy>
-				<Dz>0</Dz>
-			</Line>
-    		<Plot>
-				<Id>1773335603850</Id>
-				<Name><![CDATA[plot]]></Name>
-				<X>370</X><Y>80</Y>
-				<Label><X>10</X><Y>0</Y></Label>
-				<PublicFlag>true</PublicFlag>
-				<PresentationFlag>true</PresentationFlag>
-				<ShowLabel>false</ShowLabel>
-				<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
-				<AutoUpdate>false</AutoUpdate>
-				<RecurrenceProperties>
-					<Id>1773335603849</Id>
-					<OccurrenceAtTime>true</OccurrenceAtTime>
-					<OccurrenceDate>1773388800000</OccurrenceDate>
-					<OccurrenceTime Class="CodeUnitValue">
-						<Code><![CDATA[0]]></Code>
-						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
-					</OccurrenceTime>
-					<RecurrenceCode Class="CodeUnitValue">
-						<Code><![CDATA[1]]></Code>
-						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
-					</RecurrenceCode>
-				</RecurrenceProperties>
-				<EmbeddedIcon>false</EmbeddedIcon>
-				<Width>500</Width>
-				<Height>300</Height>
-				<BackgroundColor/>
-				<BorderColor/>
-				<ChartArea>
-					<XOffset>80</XOffset>
-					<YOffset>20</YOffset>
-					<Width>400</Width>
-					<Height>200</Height>
-					<BackgroundColor>-1</BackgroundColor>
-					<BorderColor>-9868951</BorderColor>
-					<GridColor>-12566464</GridColor>
-				</ChartArea>
-				<Legend>
-					<Place>SOUTH</Place>
-					<TextColor>-16777216</TextColor>
-					<Size>40</Size>
-				</Legend>
-				<Labels>
-					<HorLabelsPosition>DEFAULT</HorLabelsPosition>
-					<VerLabelsPosition>DEFAULT</VerLabelsPosition>
-					<TextColor>-12566464</TextColor>
-				</Labels>
-				<ShowLegend>true</ShowLegend>
-				<VerScaleFromExpression><![CDATA[0]]></VerScaleFromExpression>
-				<VerScaleToExpression><![CDATA[1]]></VerScaleToExpression>
-				<VerScaleType>AUTO</VerScaleType>
-				<DrawLine>true</DrawLine>
-				<Interpolation>LINEAR</Interpolation>
-				<DatasetExpression>  
-					<Title><![CDATA[Current]]></Title>
-				<Id>1773335603852</Id>
-				<Expression><![CDATA[datasetCurrentObjective]]></Expression>
-				<Color>-4144960</Color>
-				<Expression2Flag>false</Expression2Flag>
-					<PointStyle>CIRCLE</PointStyle>
-					<LineWidth>0.0</LineWidth>
-					<HorizontalAxisExpression><![CDATA[]]></HorizontalAxisExpression>
-				</DatasetExpression>
-				<DatasetExpression>  
-					<Title><![CDATA[Best infeasible]]></Title>
-				<Id>1773335603853</Id>
-				<Expression><![CDATA[datasetBestInfeasibleObjective]]></Expression>
-				<Color>-4194304</Color>
-				<Expression2Flag>false</Expression2Flag>
-					<PointStyle>NONE</PointStyle>
-					<LineWidth>2.0</LineWidth>
-					<HorizontalAxisExpression><![CDATA[]]></HorizontalAxisExpression>
-				</DatasetExpression>
-				<DatasetExpression>  
-					<Title><![CDATA[Best feasible]]></Title>
-				<Id>1773335603854</Id>
-				<Expression><![CDATA[datasetBestFeasibleObjective]]></Expression>
-				<Color>-16777088</Color>
-				<Expression2Flag>false</Expression2Flag>
-					<PointStyle>NONE</PointStyle>
-					<LineWidth>2.0</LineWidth>
-					<HorizontalAxisExpression><![CDATA[]]></HorizontalAxisExpression>
-				</DatasetExpression>
-				<SamplesToKeep>100</SamplesToKeep>
-				<HorScaleFromExpression><![CDATA[0]]></HorScaleFromExpression>
-				<HorScaleToExpression><![CDATA[1]]></HorScaleToExpression>
-				<HorScaleType>AUTO</HorScaleType>
-    		</Plot>
-			<Text>
-				<Id>1773335705424</Id>
-				<Name><![CDATA[text81]]></Name>
-				<X>440</X><Y>400</Y>
-				<Label><X>0</X><Y>-10</Y></Label>
-				<PublicFlag>true</PublicFlag>
-				<PresentationFlag>true</PresentationFlag>
-				<ShowLabel>false</ShowLabel>
-				<DrawMode>SHAPE_DRAW_2D</DrawMode>
-				<EmbeddedIcon>false</EmbeddedIcon>
-				<Z>0</Z>
-				<Rotation>0.0</Rotation>
-				<Color>-16777216</Color>
-				<Text><![CDATA[Best found storage capacity so far + (int) bestIteratin().getDouble("investedStorageCapacity")]]></Text>
-				<Font>
-					<Name>SansSerif</Name>
-					<Size>20</Size>
-					<Style>0</Style>
-				</Font>
-				<Alignment>LEFT</Alignment>
-			</Text>
-			<Text>
-				<Id>1773335727570</Id>
-				<Name><![CDATA[text82]]></Name>
-				<X>440</X><Y>460</Y>
-				<Label><X>0</X><Y>-10</Y></Label>
-				<PublicFlag>true</PublicFlag>
-				<PresentationFlag>true</PresentationFlag>
-				<ShowLabel>false</ShowLabel>
-				<DrawMode>SHAPE_DRAW_2D</DrawMode>
-				<EmbeddedIcon>false</EmbeddedIcon>
-				<Z>0</Z>
-				<Rotation>0.0</Rotation>
-				<Color>-16777216</Color>
-				<Text><![CDATA[Max NPV so far: " + (int) root.npv + " SGD]]></Text>
-				<Font>
-					<Name>SansSerif</Name>
-					<Size>20</Size>
-					<Style>0</Style>
-				</Font>
-				<Alignment>LEFT</Alignment>
-			</Text>
-		</Presentation>
+				<Line>
+					<Id>1773335603840</Id>
+					<Name><![CDATA[line3]]></Name>
+					<X>250</X><Y>70</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>true</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<ZHeight>10</ZHeight>
+					<LineWidth>1</LineWidth>
+					<LineColor>-4144960</LineColor>
+					<LineMaterial>null</LineMaterial>
+					<LineStyle>SOLID</LineStyle>
+					<BeginArrowSize>1</BeginArrowSize>
+					<BeginArrowStyle>0</BeginArrowStyle>
+					<EndArrowSize>1</EndArrowSize>
+					<EndArrowStyle>0</EndArrowStyle>
+					<Dx>0</Dx>
+					<Dy>820</Dy>
+					<Dz>0</Dz>
+				</Line>
+    			<Plot>
+					<Id>1773335603850</Id>
+					<Name><![CDATA[plot]]></Name>
+					<X>370</X><Y>80</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>true</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+					<AutoUpdate>false</AutoUpdate>
+					<RecurrenceProperties>
+						<Id>1773335603849</Id>
+						<OccurrenceAtTime>true</OccurrenceAtTime>
+						<OccurrenceDate>1773388800000</OccurrenceDate>
+						<OccurrenceTime Class="CodeUnitValue">
+							<Code><![CDATA[0]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</OccurrenceTime>
+						<RecurrenceCode Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</RecurrenceCode>
+					</RecurrenceProperties>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Width>500</Width>
+					<Height>300</Height>
+					<BackgroundColor/>
+					<BorderColor/>
+					<ChartArea>
+						<XOffset>80</XOffset>
+						<YOffset>20</YOffset>
+						<Width>400</Width>
+						<Height>200</Height>
+						<BackgroundColor>-1</BackgroundColor>
+						<BorderColor>-9868951</BorderColor>
+						<GridColor>-12566464</GridColor>
+					</ChartArea>
+					<Legend>
+						<Place>SOUTH</Place>
+						<TextColor>-16777216</TextColor>
+						<Size>40</Size>
+					</Legend>
+					<Labels>
+						<HorLabelsPosition>DEFAULT</HorLabelsPosition>
+						<VerLabelsPosition>DEFAULT</VerLabelsPosition>
+						<TextColor>-12566464</TextColor>
+					</Labels>
+					<ShowLegend>true</ShowLegend>
+					<VerScaleFromExpression><![CDATA[0]]></VerScaleFromExpression>
+					<VerScaleToExpression><![CDATA[1]]></VerScaleToExpression>
+					<VerScaleType>AUTO</VerScaleType>
+					<DrawLine>true</DrawLine>
+					<Interpolation>LINEAR</Interpolation>
+					<DatasetExpression>  
+						<Title><![CDATA[Current]]></Title>
+					<Id>1773335603852</Id>
+					<Expression><![CDATA[datasetCurrentObjective]]></Expression>
+					<Color>-4144960</Color>
+					<Expression2Flag>false</Expression2Flag>
+						<PointStyle>CIRCLE</PointStyle>
+						<LineWidth>0.0</LineWidth>
+						<HorizontalAxisExpression><![CDATA[]]></HorizontalAxisExpression>
+					</DatasetExpression>
+					<DatasetExpression>  
+						<Title><![CDATA[Best infeasible]]></Title>
+					<Id>1773335603853</Id>
+					<Expression><![CDATA[datasetBestInfeasibleObjective]]></Expression>
+					<Color>-4194304</Color>
+					<Expression2Flag>false</Expression2Flag>
+						<PointStyle>NONE</PointStyle>
+						<LineWidth>2.0</LineWidth>
+						<HorizontalAxisExpression><![CDATA[]]></HorizontalAxisExpression>
+					</DatasetExpression>
+					<DatasetExpression>  
+						<Title><![CDATA[Best feasible]]></Title>
+					<Id>1773335603854</Id>
+					<Expression><![CDATA[datasetBestFeasibleObjective]]></Expression>
+					<Color>-16777088</Color>
+					<Expression2Flag>false</Expression2Flag>
+						<PointStyle>NONE</PointStyle>
+						<LineWidth>2.0</LineWidth>
+						<HorizontalAxisExpression><![CDATA[]]></HorizontalAxisExpression>
+					</DatasetExpression>
+					<SamplesToKeep>100</SamplesToKeep>
+					<HorScaleFromExpression><![CDATA[0]]></HorScaleFromExpression>
+					<HorScaleToExpression><![CDATA[1]]></HorScaleToExpression>
+					<HorScaleType>AUTO</HorScaleType>
+    			</Plot>
+				<Text>
+					<Id>1773335705424</Id>
+					<Name><![CDATA[text81]]></Name>
+					<X>440</X><Y>400</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>true</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-16777216</Color>
+					<Text><![CDATA[Best found storage capacity so far + (int) bestIteratin().getDouble("investedStorageCapacity")]]></Text>
+					<Font>
+						<Name>SansSerif</Name>
+						<Size>20</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
+				<Text>
+					<Id>1773335727570</Id>
+					<Name><![CDATA[text82]]></Name>
+					<X>440</X><Y>460</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>true</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-16777216</Color>
+					<Text><![CDATA[Max NPV so far: " + (int) root.npv + " SGD]]></Text>
+					<Font>
+						<Name>SansSerif</Name>
+						<Size>20</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
+			</Presentation>
 
-		<Parameter>	
-			<Id>1772102424799</Id>
-			<Type>CONTINUOUS</Type>
-			<Min Class="CodeValue">
-				<Code><![CDATA[0]]></Code>
-			</Min>
-			<Max Class="CodeValue">
-				<Code><![CDATA[1000]]></Code>
-			</Max>
-		</Parameter>
-		<Parameter>	
-			<Id>1772102441015</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>1772102448478</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>1772102454116</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>1772110950970</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000001</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000003</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000005</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000007</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000009</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000011</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000013</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000015</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000017</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000100</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000102</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000104</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000106</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000108</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<Parameter>	
-			<Id>9000000000200</Id>
-			<Type>FIXED</Type>
-		</Parameter>
-		<ObjectiveFunctionCode><![CDATA[root.npv ]]></ObjectiveFunctionCode>
-		<Objective>MAXIMIZE</Objective>  
-		<OptimizationEngine>NATIVE</OptimizationEngine>
-		<AfterIterationCode><![CDATA[if (isBestSolutionFeasible()) {
+			<Parameter>	
+				<Id>1772102424799</Id>
+				<Type>CONTINUOUS</Type>
+				<Min Class="CodeValue">
+					<Code><![CDATA[0]]></Code>
+				</Min>
+				<Max Class="CodeValue">
+					<Code><![CDATA[1000]]></Code>
+				</Max>
+			</Parameter>
+			<Parameter>	
+				<Id>1772102441015</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>1772102448478</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>1772102454116</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>1772110950970</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000001</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000003</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000005</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000007</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000009</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000011</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000013</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000015</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000017</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000100</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000102</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000104</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000106</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000108</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<Parameter>	
+				<Id>9000000000200</Id>
+				<Type>FIXED</Type>
+			</Parameter>
+			<ObjectiveFunctionCode><![CDATA[root.npv ]]></ObjectiveFunctionCode>
+			<Objective>MAXIMIZE</Objective>  
+			<OptimizationEngine>NATIVE</OptimizationEngine>
+			<AfterIterationCode><![CDATA[if (isBestSolutionFeasible()) {
 	datasetBestFeasibleObjective.update();
 }
 if (!isCurrentSolutionFeasible()) {
@@ -15054,57 +15068,65 @@ if (bestInfeasibleObjective != Double.NEGATIVE_INFINITY) {
 	datasetBestInfeasibleObjective.update();
 }
 ]]></AfterIterationCode>
-		<AllowParallelEvaluations>true</AllowParallelEvaluations>
-		<ReplicationsProperties>
-			<UseReplication>false</UseReplication>
-			<FixedReplicationsNumber>true</FixedReplicationsNumber>
-			<ReplicationPerIteration>10</ReplicationPerIteration>
-			<MinimumReplication>2</MinimumReplication>
-			<MaximumReplication>10</MaximumReplication>
-			<ConfidenceLevel>LEVEL_80</ConfidenceLevel>
-			<ErrorPercent>0.5</ErrorPercent>
-		</ReplicationsProperties>
-		<PresentationProperties>
-			<EnableZoomAndPanning>true</EnableZoomAndPanning>
-			<Title><![CDATA[MAPUCCIO : Opt_NPV_GWP]]></Title>	
-			<EnableDeveloperPanel>true</EnableDeveloperPanel>
-			<ShowDeveloperPanelOnStart>false</ShowDeveloperPanelOnStart>
-		</PresentationProperties>
-		<ModelTimeProperties>
-			<StopOption><![CDATA[Stop at specified date]]></StopOption>
-			<InitialDate><![CDATA[1767225600000]]></InitialDate>	
-			<InitialTime><![CDATA[0.0]]></InitialTime>	
-			<FinalDate><![CDATA[2082672000000]]></FinalDate>	
-			<FinalTime><![CDATA[3651.0]]></FinalTime>	
-			<StopAfterIterationCount>true</StopAfterIterationCount>
-			<IterationCount>500</IterationCount>
-			<AutomaticStop>false</AutomaticStop>
-		</ModelTimeProperties>
-	</OptimizationExperiment>	
+			<AllowParallelEvaluations>true</AllowParallelEvaluations>
+			<ReplicationsProperties>
+				<UseReplication>false</UseReplication>
+				<FixedReplicationsNumber>true</FixedReplicationsNumber>
+				<ReplicationPerIteration>10</ReplicationPerIteration>
+				<MinimumReplication>2</MinimumReplication>
+				<MaximumReplication>10</MaximumReplication>
+				<ConfidenceLevel>LEVEL_80</ConfidenceLevel>
+				<ErrorPercent>0.5</ErrorPercent>
+			</ReplicationsProperties>
+			<PresentationProperties>
+				<EnableZoomAndPanning>true</EnableZoomAndPanning>
+				<Title><![CDATA[MAPUCCIO : Opt_NPV_GWP]]></Title>	
+				<EnableDeveloperPanel>true</EnableDeveloperPanel>
+				<ShowDeveloperPanelOnStart>false</ShowDeveloperPanelOnStart>
+			</PresentationProperties>
+			<ModelTimeProperties>
+				<StopOption><![CDATA[Stop at specified date]]></StopOption>
+				<InitialDate><![CDATA[1767225600000]]></InitialDate>	
+				<InitialTime><![CDATA[0.0]]></InitialTime>	
+				<FinalDate><![CDATA[2082672000000]]></FinalDate>	
+				<FinalTime><![CDATA[3651.0]]></FinalTime>	
+				<StopAfterIterationCount>true</StopAfterIterationCount>
+				<IterationCount>500</IterationCount>
+				<AutomaticStop>false</AutomaticStop>
+			</ModelTimeProperties>
+		</OptimizationExperiment>	
 	</Experiments>
+	<ModelResources>
+		<Resource>
+			<Id>1774771731589</Id>
+			<Path><![CDATA[22MARZ.xlsx]]></Path>
+			<ReferencedFromUserCode>false</ReferencedFromUserCode>
+			<Location>FILE_SYSTEM</Location>
+		</Resource>
+	</ModelResources>
     <RequiredLibraryReference>
-	<LibraryName><![CDATA[com.anylogic.libraries.modules.markup_descriptors]]></LibraryName>
-	<VersionMajor>1</VersionMajor>
-	<VersionMinor>0</VersionMinor>
-	<VersionBuild>0</VersionBuild>
+		<LibraryName><![CDATA[com.anylogic.libraries.modules.markup_descriptors]]></LibraryName>
+		<VersionMajor>1</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>0</VersionBuild>
     </RequiredLibraryReference>
     <RequiredLibraryReference>
-	<LibraryName><![CDATA[com.anylogic.libraries.processmodeling]]></LibraryName>
-	<VersionMajor>8</VersionMajor>
-	<VersionMinor>0</VersionMinor>
-	<VersionBuild>5</VersionBuild>
+		<LibraryName><![CDATA[com.anylogic.libraries.processmodeling]]></LibraryName>
+		<VersionMajor>8</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>5</VersionBuild>
     </RequiredLibraryReference>
     <RequiredLibraryReference>
-	<LibraryName><![CDATA[com.anylogic.libraries.road]]></LibraryName>
-	<VersionMajor>8</VersionMajor>
-	<VersionMinor>0</VersionMinor>
-	<VersionBuild>5</VersionBuild>
+		<LibraryName><![CDATA[com.anylogic.libraries.road]]></LibraryName>
+		<VersionMajor>8</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>5</VersionBuild>
     </RequiredLibraryReference>
     <RequiredLibraryReference>
-	<LibraryName><![CDATA[com.anylogic.libraries.pedestrian]]></LibraryName>
-	<VersionMajor>8</VersionMajor>
-	<VersionMinor>0</VersionMinor>
-	<VersionBuild>5</VersionBuild>
+		<LibraryName><![CDATA[com.anylogic.libraries.pedestrian]]></LibraryName>
+		<VersionMajor>8</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>5</VersionBuild>
     </RequiredLibraryReference>
 </Model>
 <ConvertersApplied>
