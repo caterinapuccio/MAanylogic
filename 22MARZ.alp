@@ -10597,7 +10597,10 @@ function updates storage counters and returns a boolean.]]></Description>
 						<Name><![CDATA[prov]]></Name>
 						<Type><![CDATA[Provider]]></Type>
 					</Parameter>
-					<Body><![CDATA[// ═══ CE3.0: acceptBooking — 2-tier storage + booking log ════════════════════
+					<Body><![CDATA[// Guard: do not dispatch a truck for zero-quantity bookings (rawWaste clamped to 0)
+if (qty <= 0.0) return false;
+
+// ═══ CE3.0: acceptBooking — 2-tier storage + booking log ════════════════════
 int matIdx = main.matIndex(mat);
 
 // Distance from this provider to Intermediate (for transport metrics)
