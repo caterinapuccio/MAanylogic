@@ -661,12 +661,85 @@ public void exportValidationReport() {
                 mRow.createCell(c).setCellValue(row[c]);
         }
 
+        // ── Sheet 4: TripLog ────────────────────────────────────────────────────────────────────
+        org.apache.poi.xssf.usermodel.XSSFDataFormat tlFmt = wb.createDataFormat();
+        org.apache.poi.xssf.usermodel.XSSFCellStyle numStyle = wb.createCellStyle();
+        numStyle.setDataFormat(tlFmt.getFormat("0.000"));
+        org.apache.poi.xssf.usermodel.XSSFCellStyle dayStyle = wb.createCellStyle();
+        dayStyle.setDataFormat(tlFmt.getFormat("0.00"));
+
+        org.apache.poi.xssf.usermodel.XSSFSheet tripLogSheet = wb.createSheet("TripLog");
+        int[] tlColW = {2000,2000,2800,2500,6000,5000,3500,2500,4000,4000};
+        String[] tlHdrs = {"SimDay","TruckID","Role","ProvIdx","ProviderName","Material",
+                           "Payload_t","TripNum","CumulMass_t","TransitTime_d"};
+        for (int c = 0; c < tlColW.length; c++) tripLogSheet.setColumnWidth(c, tlColW[c]);
+        org.apache.poi.xssf.usermodel.XSSFRow tlHdrRow = tripLogSheet.createRow(0);
+        for (int c = 0; c < tlHdrs.length; c++) {
+            org.apache.poi.xssf.usermodel.XSSFCell tlC = tlHdrRow.createCell(c);
+            tlC.setCellValue(tlHdrs[c]); tlC.setCellStyle(hdrStyle);
+        }
+        int tlRow = 1;
+        for (Object[] entry : truckLog) {
+            org.apache.poi.xssf.usermodel.XSSFRow tlR = tripLogSheet.createRow(tlRow++);
+            tlR.createCell(0).setCellValue(((Number)entry[0]).doubleValue());
+            tlR.createCell(1).setCellValue(((Number)entry[1]).intValue());
+            tlR.createCell(2).setCellValue((String)entry[2]);
+            tlR.createCell(3).setCellValue(((Number)entry[3]).intValue());
+            tlR.createCell(4).setCellValue((String)entry[4]);
+            tlR.createCell(5).setCellValue((String)entry[5]);
+            org.apache.poi.xssf.usermodel.XSSFCell tlP = tlR.createCell(6);
+            tlP.setCellValue(((Number)entry[6]).doubleValue());
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ns6 = wb.createCellStyle(); ns6.cloneStyleFrom(numStyle); tlP.setCellStyle(ns6);
+            tlR.createCell(7).setCellValue(((Number)entry[7]).intValue());
+            org.apache.poi.xssf.usermodel.XSSFCell tlCm = tlR.createCell(8);
+            tlCm.setCellValue(((Number)entry[8]).doubleValue());
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ns8 = wb.createCellStyle(); ns8.cloneStyleFrom(numStyle); tlCm.setCellStyle(ns8);
+            org.apache.poi.xssf.usermodel.XSSFCell tlTt = tlR.createCell(9);
+            tlTt.setCellValue(((Number)entry[9]).doubleValue());
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ns9 = wb.createCellStyle(); ns9.cloneStyleFrom(numStyle); tlTt.setCellStyle(ns9);
+        }
+        tripLogSheet.createFreezePane(0, 1);
+
+        // ── Sheet 5: TruckSummary ────────────────────────────────────────────────────────────
+        org.apache.poi.xssf.usermodel.XSSFSheet truckSumSheet = wb.createSheet("TruckSummary");
+        truckSumSheet.setColumnWidth(0,2000); truckSumSheet.setColumnWidth(1,2800);
+        truckSumSheet.setColumnWidth(2,2500); truckSumSheet.setColumnWidth(3,6000);
+        truckSumSheet.setColumnWidth(4,5000); truckSumSheet.setColumnWidth(5,3500);
+        truckSumSheet.setColumnWidth(6,4000);
+        String[] tsHdrs = {"TruckID","Role","ProvIdx","ProviderName","Material","Trips","TotalMass_t"};
+        org.apache.poi.xssf.usermodel.XSSFRow tsHdrRow = truckSumSheet.createRow(0);
+        for (int c = 0; c < tsHdrs.length; c++) {
+            org.apache.poi.xssf.usermodel.XSSFCell tsC = tsHdrRow.createCell(c);
+            tsC.setCellValue(tsHdrs[c]); tsC.setCellStyle(hdrStyle);
+        }
+        int tsRow = 1;
+        for (int i = 0; i < garbageTrucks.size(); i++) {
+            GarbageTruck gt = garbageTrucks.get(i);
+            String tsRole = gt.isJolly ? "jolly" : ("dedicated#" + gt.myProviderIndex);
+            String tsProvName = "—"; String tsMat = "mixed";
+            if (!gt.isJolly && gt.myProviderIndex >= 0 && gt.myProviderIndex < providers.size()) {
+                Provider tsp = (Provider) providers.get(gt.myProviderIndex);
+                tsProvName = tsp.companyName; tsMat = tsp.myMaterial.toString();
+            }
+            org.apache.poi.xssf.usermodel.XSSFRow tsr = truckSumSheet.createRow(tsRow++);
+            tsr.createCell(0).setCellValue(gt.truckIndex);
+            tsr.createCell(1).setCellValue(tsRole);
+            tsr.createCell(2).setCellValue(gt.myProviderIndex);
+            tsr.createCell(3).setCellValue(tsProvName);
+            tsr.createCell(4).setCellValue(tsMat);
+            tsr.createCell(5).setCellValue(gt.tripsCompleted);
+            org.apache.poi.xssf.usermodel.XSSFCell tmc = tsr.createCell(6); tmc.setCellValue(gt.totalMassCarried);
+            org.apache.poi.xssf.usermodel.XSSFCellStyle tsNs = wb.createCellStyle(); tsNs.cloneStyleFrom(numStyle); tmc.setCellStyle(tsNs);
+        }
+        truckSumSheet.createFreezePane(0, 1);
+
         // ── Write file ────────────────────────────────────────────────────────
         try (java.io.FileOutputStream fos = new java.io.FileOutputStream(outPath)) {
             wb.write(fos);
         }
         wb.close();
-        traceln("[CE3 Validation] Report saved: " + outPath);
+        traceln("[CE3 Validation] Report (Summary+Errors+ConnMap+TripLog+TruckSummary) saved: " + outPath
+            + " | " + truckLog.size() + " trip records | " + garbageTrucks.size() + " trucks");
 
     } catch (Exception ex) {
         traceln("[CE3 Validation] ERROR writing report: " + ex.getMessage());
@@ -681,139 +754,6 @@ public void exportValidationReport() {
 //          | Payload_t | TripNum | CumulMass_t | TransitTime_days
 // ═══════════════════════════════════════════════════════════════════════════════
 java.util.ArrayList<Object[]> truckLog = new java.util.ArrayList<>();
-
-public void exportTruckLog() {
-    String fileName = "22MARZ_TruckLog_Y" + String.format("%02d", (int)currentYear) + ".xlsx";
-    String outPath  = System.getProperty("user.dir") + java.io.File.separator + fileName;
-
-    try {
-        org.apache.poi.xssf.usermodel.XSSFWorkbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
-
-        // ── Styles ────────────────────────────────────────────────────────────
-        org.apache.poi.xssf.usermodel.XSSFFont hdrFont = wb.createFont();
-        hdrFont.setBold(true);
-        hdrFont.setFontHeightInPoints((short)11);
-        hdrFont.setColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)255,(byte)255,(byte)255}, null));
-
-        org.apache.poi.xssf.usermodel.XSSFCellStyle hdrStyle = wb.createCellStyle();
-        hdrStyle.setFont(hdrFont);
-        hdrStyle.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)31,(byte)73,(byte)125}, null));
-        hdrStyle.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
-
-        org.apache.poi.xssf.usermodel.XSSFCellStyle numStyle = wb.createCellStyle();
-        org.apache.poi.xssf.usermodel.XSSFDataFormat fmt = wb.createDataFormat();
-        numStyle.setDataFormat(fmt.getFormat("0.000"));
-
-        org.apache.poi.xssf.usermodel.XSSFCellStyle dayStyle = wb.createCellStyle();
-        dayStyle.setDataFormat(fmt.getFormat("0.00"));
-
-        org.apache.poi.xssf.usermodel.XSSFCellStyle altStyle = wb.createCellStyle();
-        altStyle.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null));
-        altStyle.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
-
-        // ── Sheet 1: Trip Log (flat table) ────────────────────────────────────
-        org.apache.poi.xssf.usermodel.XSSFSheet log = wb.createSheet("TripLog");
-        int[] colWidths = {2000, 2000, 2800, 2500, 6000, 5000, 3500, 2500, 4000, 4000};
-        String[] headers = {"SimDay","TruckID","Role","ProvIdx","ProviderName","Material",
-                            "Payload_t","TripNum","CumulMass_t","TransitTime_d"};
-        for (int c = 0; c < colWidths.length; c++) log.setColumnWidth(c, colWidths[c]);
-
-        org.apache.poi.xssf.usermodel.XSSFRow hdrRow = log.createRow(0);
-        for (int c = 0; c < headers.length; c++) {
-            org.apache.poi.xssf.usermodel.XSSFCell cell = hdrRow.createCell(c);
-            cell.setCellValue(headers[c]);
-            cell.setCellStyle(hdrStyle);
-        }
-
-        int row = 1;
-        for (Object[] entry : truckLog) {
-            org.apache.poi.xssf.usermodel.XSSFRow r = log.createRow(row);
-            boolean alt = (row % 2 == 0);
-            // col 0: SimDay — use Number cast to handle both Double and Integer boxing
-            org.apache.poi.xssf.usermodel.XSSFCell c0 = r.createCell(0); c0.setCellValue(((Number)entry[0]).doubleValue());
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ds = wb.createCellStyle(); ds.cloneStyleFrom(dayStyle); if (alt) ds.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ds.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
-            c0.setCellStyle(ds);
-            // col 1: TruckID
-            r.createCell(1).setCellValue(((Number)entry[1]).intValue());
-            // col 2: Role (String)
-            r.createCell(2).setCellValue((String)entry[2]);
-            // col 3: ProvIdx
-            r.createCell(3).setCellValue(((Number)entry[3]).intValue());
-            // col 4: ProviderName (String)
-            r.createCell(4).setCellValue((String)entry[4]);
-            // col 5: Material (String)
-            r.createCell(5).setCellValue((String)entry[5]);
-            // col 6: Payload_t
-            org.apache.poi.xssf.usermodel.XSSFCell c6 = r.createCell(6); c6.setCellValue(((Number)entry[6]).doubleValue());
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ns = wb.createCellStyle(); ns.cloneStyleFrom(numStyle); if (alt) ns.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
-            c6.setCellStyle(ns);
-            // col 7: TripNum
-            r.createCell(7).setCellValue(((Number)entry[7]).intValue());
-            // col 8: CumulMass_t
-            org.apache.poi.xssf.usermodel.XSSFCell c8 = r.createCell(8); c8.setCellValue(((Number)entry[8]).doubleValue());
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ns2 = wb.createCellStyle(); ns2.cloneStyleFrom(numStyle); if (alt) ns2.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns2.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
-            c8.setCellStyle(ns2);
-            // col 9: TransitTime_d
-            org.apache.poi.xssf.usermodel.XSSFCell c9 = r.createCell(9); c9.setCellValue(((Number)entry[9]).doubleValue());
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ns3 = wb.createCellStyle(); ns3.cloneStyleFrom(numStyle); if (alt) ns3.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns3.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
-            c9.setCellStyle(ns3);
-            row++;
-        }
-        // Freeze header row
-        log.createFreezePane(0, 1);
-
-        // ── Sheet 2: Truck Summary (one row per truck) ───────────────────────
-        org.apache.poi.xssf.usermodel.XSSFSheet sumSheet = wb.createSheet("TruckSummary");
-        sumSheet.setColumnWidth(0, 2000); sumSheet.setColumnWidth(1, 2800);
-        sumSheet.setColumnWidth(2, 2500); sumSheet.setColumnWidth(3, 6000);
-        sumSheet.setColumnWidth(4, 5000); sumSheet.setColumnWidth(5, 3500);
-        sumSheet.setColumnWidth(6, 4000);
-
-        String[] sumHdrs = {"TruckID","Role","ProvIdx","ProviderName","Material","Trips","TotalMass_t"};
-        org.apache.poi.xssf.usermodel.XSSFRow sumHdr = sumSheet.createRow(0);
-        for (int c = 0; c < sumHdrs.length; c++) {
-            org.apache.poi.xssf.usermodel.XSSFCell cell = sumHdr.createCell(c);
-            cell.setCellValue(sumHdrs[c]);
-            cell.setCellStyle(hdrStyle);
-        }
-
-        // Build per-truck summary from garbageTrucks population
-        int sr = 1;
-        for (int i = 0; i < garbageTrucks.size(); i++) {
-            GarbageTruck gt = garbageTrucks.get(i);
-            String role = gt.isJolly ? "jolly" : ("dedicated#" + gt.myProviderIndex);
-            String provName = "—";
-            String material = "mixed";
-            if (!gt.isJolly && gt.myProviderIndex >= 0 && gt.myProviderIndex < providers.size()) {
-                Provider p = (Provider) providers.get(gt.myProviderIndex);
-                provName = p.companyName;
-                material = p.myMaterial.toString();
-            }
-            org.apache.poi.xssf.usermodel.XSSFRow sr_row = sumSheet.createRow(sr++);
-            sr_row.createCell(0).setCellValue(gt.truckIndex);
-            sr_row.createCell(1).setCellValue(role);
-            sr_row.createCell(2).setCellValue(gt.myProviderIndex);
-            sr_row.createCell(3).setCellValue(provName);
-            sr_row.createCell(4).setCellValue(material);
-            sr_row.createCell(5).setCellValue(gt.tripsCompleted);
-            org.apache.poi.xssf.usermodel.XSSFCell mc = sr_row.createCell(6); mc.setCellValue(gt.totalMassCarried);
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ns4 = wb.createCellStyle(); ns4.cloneStyleFrom(numStyle);
-            mc.setCellStyle(ns4);
-        }
-        sumSheet.createFreezePane(0, 1);
-
-        // ── Write file ───────────────────────────────────────────────────────
-        java.io.FileOutputStream fos = new java.io.FileOutputStream(outPath);
-        wb.write(fos);
-        fos.close();
-        wb.close();
-        traceln("[CE3] Truck log exported: " + outPath + " (" + truckLog.size() + " trip records, " + garbageTrucks.size() + " trucks)");
-
-    } catch (Exception ex) {
-        traceln("[CE3 TruckLog] ERROR writing log: " + ex.getMessage());
-        ex.printStackTrace();
-    }
-}
 
 ]]></AdditionalClassCode>
 			<StartupCode><![CDATA[// ═══ CE 3.0 STARTUP (22MARZ): Read from 22MARZ.xlsx ════════════════════════
@@ -2341,12 +2281,10 @@ landfillLog.add(java.util.Arrays.stream(landfillCostPerMat).sum());
 lastYearNetBalance = currentNetBalance;
 currentYear++;
 
-// Export validation + connection report at end of 10-year horizon
-// Export truck log every simulated year (file named by year)
-exportTruckLog();
+// Export combined validation + truck-log report at end of 10-year horizon
 if (currentYear >= 10) {
-    exportValidationReport();
-    traceln("[CE3] Validation report exported at year " + currentYear);
+    exportValidationReport();  // sheets: Summary, Errors, ConnMap, TripLog, TruckSummary
+    traceln("[CE3] Validation report (incl. TripLog) exported at year " + currentYear);
 }
 ]]></Action>
 				</Event>
@@ -10714,47 +10652,19 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.sourceProvider = prov;
             prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
             send("Go", truck);
+            if (prov.getIndex() == 0 || truck.truckIndex == 0) {
+                traceln(String.format("[DISPATCH-T1] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s",
+                    time(DAY), prov.getIndex(), prov.companyName, truck.truckIndex, truck.isJolly, qty, mat));
+            }
+        } else if (prov.getIndex() == 0) {
+            traceln(String.format("[DISPATCH-FAIL-T1] t=%.2fd | prov0 → no truck available | %.3ft %s",
+                time(DAY), qty, mat));
         }
     }
     return true;
 }
 
-// Check Tier 2: shared flexible pool
-double tier2Free = tier2SharedCapacity - tier2UsedCapacity;
-double neededFromTier2 = qty - tier1Free;
-
-if (neededFromTier2 <= tier2Free) {
-    // ── ACCEPTED: split between Tier 1 and Tier 2 ───────────────────────────
-    recyclingStoragePerMat[matIdx] += qty;
-    tier2UsedCapacity += neededFromTier2;
-    totalBookingsAccepted[matIdx]++;
-    double tCost = main.transportCostCalc(qty, distKm);
-double gwpCollection = main.transportGWPCalc(qty, distKm);
-    this.totalCosts            += tCost;
-    this.financialBalance      -= tCost;
-    main.networkTotalTransportCostISProcesses += tCost;
-    main.totalTransportCost    += tCost;
-    main.transportGWPISProcesses += gwpCollection;
-    main.totalTransportGWP     += gwpCollection;
-        bookingLog.add(new Object[]{
-        time(),
-        prov.getIndex(),
-        mat.toString(),
-        qty,
-        "ACCEPTED",
-        String.format("Tier1+%.2ft_Tier2", neededFromTier2),
-        distKm,
-        tCost
-    });
-    // CE3.0 Phase 3: dispatch — dedicated truck first, fall back to jolly pool
-    {
-        GarbageTruck truck = null;
-        int pIdx = prov.getIndex();
-        if (pIdx >= 0 && pIdx < main.garbageTrucks.size()) {
-            GarbageTruck dedicated = main.garbageTrucks.get(pIdx);
-            if (!dedicated.busy) truck = dedicated;
-        }
-        if (truck == null) {
+(truck == null) {
             for (GarbageTruck t : main.garbageTrucks) {
                 if (t.isJolly && !t.busy) { truck = t; break; }
             }
@@ -10765,6 +10675,13 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.sourceProvider = prov;
             prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
             send("Go", truck);
+            if (prov.getIndex() == 0 || truck.truckIndex == 0) {
+                traceln(String.format("[DISPATCH-T2] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s",
+                    time(DAY), prov.getIndex(), prov.companyName, truck.truckIndex, truck.isJolly, qty, mat));
+            }
+        } else if (prov.getIndex() == 0) {
+            traceln(String.format("[DISPATCH-FAIL-T2] t=%.2fd | prov0 → no truck available | %.3ft %s",
+                time(DAY), qty, mat));
         }
     }
     return true;
@@ -12122,28 +12039,30 @@ if (!isJolly && myProviderIndex >= 0 && myProviderIndex < main.providers.size())
 }
 
 // ── 4. Update trip counters ───────────────────────────────────────────────
-tripsCompleted++;
-totalMassCarried += lastPayloadTonnes;
-
-// ── 5. Append to main.truckLog ────────────────────────────────────────────
-double transitDays = time(DAY) - lastPickupTime;
-main.truckLog.add(new Object[]{
-    time(DAY),                                           // [0] SimDay
-    truckIndex,                                          // [1] TruckID
-    isJolly ? "jolly" : ("dedicated#" + myProviderIndex), // [2] Role
-    _logProvIdx,                                         // [3] ProvIdx
-    _logProvName,                                        // [4] ProviderName
-    _logMaterial,                                        // [5] Material
-    lastPayloadTonnes,                                   // [6] Payload_t
-    tripsCompleted,                                      // [7] TripNum
-    totalMassCarried,                                    // [8] CumulMass_t
-    transitDays                                          // [9] TransitTime_d
-});
-
-// ── 6. Traceability console ───────────────────────────────────────────────
-if (main.debugMode) {
-    traceln(String.format("[TRUCK %d] DELIVERED t=%.2fd | trip#%d | %.3ft %s from %s | cumul=%.3ft | transit=%.2fd",
-        truckIndex, time(DAY), tripsCompleted, lastPayloadTonnes, _logMaterial, _logProvName, totalMassCarried, transitDays));
+// Guard: statechart initializes home at t=0 BEFORE StartupCode runs.
+// At that moment truckIndex=0 (default) and myProviderIndex=-1 for ALL trucks.
+// Only count and log REAL trips (time > 0).
+if (time(DAY) > 0) {
+    tripsCompleted++;
+    totalMassCarried += lastPayloadTonnes;
+    double transitDays = time(DAY) - lastPickupTime;
+    main.truckLog.add(new Object[]{
+        time(DAY),                                           // [0] SimDay
+        truckIndex,                                          // [1] TruckID
+        isJolly ? "jolly" : ("dedicated#" + myProviderIndex), // [2] Role
+        _logProvIdx,                                         // [3] ProvIdx
+        _logProvName,                                        // [4] ProviderName
+        _logMaterial,                                        // [5] Material
+        lastPayloadTonnes,                                   // [6] Payload_t
+        tripsCompleted,                                      // [7] TripNum
+        totalMassCarried,                                    // [8] CumulMass_t
+        transitDays                                          // [9] TransitTime_d
+    });
+    if (main.debugMode || truckIndex == 0) {
+        traceln(String.format("[TRUCK %d] HOME t=%.2fd | trip#%d | %.3ft %s from %s | cumul=%.3ft | transit=%.2fd",
+            truckIndex, time(DAY), tripsCompleted, lastPayloadTonnes,
+            _logMaterial, _logProvName, totalMassCarried, transitDays));
+    }
 }
 lastPayloadTonnes = 0.0;]]></EntryAction>
 						<FillColor/>
@@ -12160,23 +12079,30 @@ lastPayloadTonnes = 0.0;]]></EntryAction>
 					<Properties Width="100" Height="30">
 						<EntryAction><![CDATA[busy = true;
 lorry.setVisible(true);
-isReturning = false;
-// CE3.0: dedicated trucks drive provider→BIWASE; jolly trucks drive BIWASE→provider first
-if (isJolly) {
-    moveTo(targetLat, targetLon);  // outbound: BIWASE → provider
+// isReturning managed by t_dispatch (→false) and t_loaded (→true). NOT reset here.
+// CE3.0 movement logic:
+//   dedicated        : provider → BIWASE (loaded, direct)
+//   jolly outbound   : BIWASE → provider (empty, isReturning=false)
+//   jolly return leg : provider → BIWASE (loaded, isReturning=true)
+if (!isJolly) {
+    moveTo(main.intermediateLat, main.intermediateLon);  // dedicated: loaded to BIWASE
+} else if (!isReturning) {
+    moveTo(targetLat, targetLon);                        // jolly outbound: to provider
 } else {
-    moveTo(main.intermediateLat, main.intermediateLon);  // loaded: provider → BIWASE
+    moveTo(main.intermediateLat, main.intermediateLon);  // jolly return: loaded to BIWASE
 }
-// ── Traceability ──────────────────────────────────────────────────────────
-lastPickupTime = time(DAY);
-if (sourceProvider != null) {
-    lastPayloadTonnes = ((Provider) sourceProvider).rawWaste;
+// Payload + pickup time for dedicated trucks (jolly sets these in t_loaded)
+if (!isJolly) {
+    lastPickupTime = time(DAY);
+    if (sourceProvider != null) {
+        lastPayloadTonnes = ((Provider) sourceProvider).rawWaste;
+    }
 }
-if (main.debugMode) {
-    String role = isJolly ? "jolly" : ("dedicated#" + myProviderIndex);
-    String dest = isJolly ? String.format("→ Provider(%.4f,%.4f)", targetLat, targetLon) : "→ BIWASE[loaded]";
-    traceln(String.format("[TRUCK %d|%s] TRANSIT t=%.2fd | payload=%.3ft | %s",
-        truckIndex, role, time(DAY), lastPayloadTonnes, dest));
+if (main.debugMode || truckIndex == 0) {
+    String leg = (!isJolly) ? "dedicated→BIWASE[loaded]"
+                            : (isReturning ? "jolly-return→BIWASE[loaded]" : "jolly-outbound→provider[empty]");
+    traceln(String.format("[TRUCK %d] TRANSIT-ENTRY t=%.2fd | %s | payload=%.3ft",
+        truckIndex, time(DAY), leg, lastPayloadTonnes));
 }]]></EntryAction>
 						<FillColor/>
 					</Properties>
@@ -12210,7 +12136,15 @@ if (main.debugMode) {
 					</Points>
 					<IconOffset>20.0</IconOffset>
 					<Properties Source="9990000000011" Target="9990000000012" Trigger="message">
-						<Timeout Class="CodeUnitValue">
+						<Action><![CDATA[isReturning = false;
+if (truckIndex == 0) {
+    traceln(String.format("[TRUCK0-DISPATCH] t=%.2fd | 'Go' received | provider=%s | rawWaste=%.3ft",
+        time(DAY),
+        (sourceProvider != null ? ((Provider)sourceProvider).companyName : "null"),
+        (sourceProvider != null ? ((Provider)sourceProvider).rawWaste : 0.0)));
+}
+]]></Action>
+							<Timeout Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
 						</Timeout>
@@ -12242,7 +12176,18 @@ if (main.debugMode) {
 					</Points>
 					<IconOffset>60.0</IconOffset>
 					<Properties Source="9990000000012" Target="9990000000012" Trigger="arrival">
-						<Timeout Class="CodeUnitValue">
+						<Action><![CDATA[// Jolly truck arrived at provider: load waste and return
+isReturning = true;
+lastPickupTime = time(DAY);
+if (sourceProvider != null) {
+    lastPayloadTonnes = ((Provider) sourceProvider).rawWaste;
+}
+traceln(String.format("[TRUCK%d-LOADED] t=%.2fd | jolly arrived at %s | payload=%.3ft → returning",
+    truckIndex, time(DAY),
+    (sourceProvider != null ? ((Provider)sourceProvider).companyName : "?"),
+    lastPayloadTonnes));
+]]></Action>
+							<Timeout Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
 						</Timeout>
@@ -12274,7 +12219,13 @@ if (main.debugMode) {
 					</Points>
 					<IconOffset>140.0</IconOffset>
 					<Properties Source="9990000000012" Target="9990000000011" Trigger="arrival">
-						<Timeout Class="CodeUnitValue">
+						<Action><![CDATA[if (truckIndex == 0 || (isJolly && isReturning)) {
+    traceln(String.format("[TRUCK%d-ARRIVED@BIWASE] t=%.2fd | payload=%.3ft | %s → home",
+        truckIndex, time(DAY), lastPayloadTonnes,
+        isJolly ? "jolly-complete" : "dedicated-complete"));
+}
+]]></Action>
+							<Timeout Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
 						</Timeout>
