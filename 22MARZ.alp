@@ -4537,8 +4537,16 @@ rawWaste     = Math.max(avgSupplyFromExcel * 0.01,
 currentSupply = rawWaste;
 bookingAccepted = false;
 // IS scenario: attempt booking with Intermediate (synchronous)
+if (getIndex() == 0) {
+    traceln(String.format("[PROV0-GEN] t=%.2fd | rawWaste=%.3ft %s | useIS=%b",
+        time(DAY), rawWaste, myMaterial, main.useIS));
+}
 if (main.useIS) {
     bookingAccepted = main.intermediate.acceptBooking(myMaterial, rawWaste, this);
+}
+if (getIndex() == 0 && main.useIS) {
+    traceln(String.format("[PROV0-BOOKING-RESULT] t=%.2fd | bookingAccepted=%b",
+        time(DAY), bookingAccepted));
 }]]></EntryAction>
 						<FillColor/>
 					</Properties>
@@ -4553,8 +4561,11 @@ if (main.useIS) {
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="150" Height="70">
 						<EntryAction><![CDATA[// IS PATH: Booking accepted → Intermediate picks up
-traceln(String.format("[CE3] IS_Accepted t=%.1f d | prov=%d | mat=%s | qty=%.2f t",
-    time(DAY), getIndex(), myMaterial, rawWaste));
+// Broad traceln suppressed (fires for all 66 providers). Prov0 debug only:
+if (getIndex() == 0) {
+    traceln(String.format("[PROV0-IS-ACCEPTED] t=%.2fd | rawWaste=%.3ft %s",
+        time(DAY), rawWaste, myMaterial));
+}
 int matIdx = main.matIndex(myMaterial);
 double distInt = main.haversineKm(providerLat, providerLon,
                                   main.intermediateLat, main.intermediateLon);
@@ -4648,6 +4659,15 @@ if (main.debugMode) {
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="150" Height="70">
 						<EntryAction><![CDATA[// IS PATH: Booking rejected → self-haul to landfill ─────────────────
+if (getIndex() == 0) {
+    int _mIdxR = main.matIndex(myMaterial);
+    double _t1freeR = Math.max(0.0, main.intermediate.tier1CapPerMat[_mIdxR]
+                                  - main.intermediate.recyclingStoragePerMat[_mIdxR]);
+    double _t2freeR = Math.max(0.0, main.intermediate.tier2SharedCapacity
+                                  - main.intermediate.tier2UsedCapacity);
+    traceln(String.format("[PROV0-IS-REJECTED] t=%.2fd | rawWaste=%.3ft | tier1Free=%.2ft tier2Free=%.2ft",
+        time(DAY), rawWaste, _t1freeR, _t2freeR));
+}
 int matIdx = main.matIndex(myMaterial);
 double distEoL = main.haversineKm(providerLat, providerLon,
                                    main.intermediateLat, main.intermediateLon);
