@@ -683,7 +683,7 @@ public void exportValidationReport() {
 java.util.ArrayList<Object[]> truckLog = new java.util.ArrayList<>();
 
 public void exportTruckLog() {
-    String fileName = "22MARZ_TruckLog.xlsx";
+    String fileName = "22MARZ_TruckLog_Y" + String.format("%02d", currentYear) + ".xlsx";
     String outPath  = System.getProperty("user.dir") + java.io.File.separator + fileName;
 
     try {
@@ -787,7 +787,7 @@ public void exportTruckLog() {
             if (!gt.isJolly && gt.myProviderIndex >= 0 && gt.myProviderIndex < providers.size()) {
                 Provider p = (Provider) providers.get(gt.myProviderIndex);
                 provName = p.companyName;
-                material = p.myMaterial;
+                material = p.myMaterial.toString();
             }
             org.apache.poi.xssf.usermodel.XSSFRow sr_row = sumSheet.createRow(sr++);
             sr_row.createCell(0).setCellValue(gt.truckIndex);
@@ -2342,10 +2342,11 @@ lastYearNetBalance = currentNetBalance;
 currentYear++;
 
 // Export validation + connection report at end of 10-year horizon
+// Export truck log every simulated year (file named by year)
+exportTruckLog();
 if (currentYear >= 10) {
     exportValidationReport();
-    exportTruckLog();
-    traceln("[CE3] Validation + truck log exported to working directory at year " + currentYear);
+    traceln("[CE3] Validation report exported at year " + currentYear);
 }
 ]]></Action>
 				</Event>
@@ -12098,12 +12099,12 @@ int    _logProvIdx  = myProviderIndex;
 if (sourceProvider != null) {
     Provider _sp = (Provider) sourceProvider;
     _logProvName = _sp.companyName;
-    _logMaterial = _sp.myMaterial;
+    _logMaterial = _sp.myMaterial.toString();
     _logProvIdx  = _sp.getIndex();
 } else if (myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
     Provider _sp = (Provider) main.providers.get(myProviderIndex);
     _logProvName = _sp.companyName;
-    _logMaterial = _sp.myMaterial;
+    _logMaterial = _sp.myMaterial.toString();
 }
 
 // ── 2. Notify Provider and clear sourceProvider ──────────────────────────
