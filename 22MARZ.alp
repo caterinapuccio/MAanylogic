@@ -4539,7 +4539,10 @@ MaterialType.PLASTIC_SCRAP]]></Code>
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="170" Height="50">
 						<EntryAction><![CDATA[// CE3.0: Generate this week's waste supply ──────────────────────────
-rawWaste     = max(0.0, normal(avgSupplyFromExcel, avgSupplyFromExcel * supplyVariability)); // normal dist, CV=supplyVariability
+rawWaste     = Math.max(avgSupplyFromExcel * 0.01,
+                        normal(avgSupplyFromExcel, avgSupplyFromExcel * supplyVariability));
+// Normal dist, CV=supplyVariability. Floor = 1% of avg supply so rawWaste is never 0
+// (companies always generate some waste; zero-weeks would skip IS dispatch entirely).
 currentSupply = rawWaste;
 bookingAccepted = false;
 // IS scenario: attempt booking with Intermediate (synchronous)
