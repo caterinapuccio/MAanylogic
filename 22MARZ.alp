@@ -683,7 +683,7 @@ public void exportValidationReport() {
 java.util.ArrayList<Object[]> truckLog = new java.util.ArrayList<>();
 
 public void exportTruckLog() {
-    String fileName = "22MARZ_TruckLog_Y" + String.format("%02d", currentYear) + ".xlsx";
+    String fileName = "22MARZ_TruckLog_Y" + String.format("%02d", (int)currentYear) + ".xlsx";
     String outPath  = System.getProperty("user.dir") + java.io.File.separator + fileName;
 
     try {
@@ -729,32 +729,32 @@ public void exportTruckLog() {
         for (Object[] entry : truckLog) {
             org.apache.poi.xssf.usermodel.XSSFRow r = log.createRow(row);
             boolean alt = (row % 2 == 0);
-            // col 0: SimDay (double)
-            org.apache.poi.xssf.usermodel.XSSFCell c0 = r.createCell(0); c0.setCellValue((Double)entry[0]);
+            // col 0: SimDay — use Number cast to handle both Double and Integer boxing
+            org.apache.poi.xssf.usermodel.XSSFCell c0 = r.createCell(0); c0.setCellValue(((Number)entry[0]).doubleValue());
             org.apache.poi.xssf.usermodel.XSSFCellStyle ds = wb.createCellStyle(); ds.cloneStyleFrom(dayStyle); if (alt) ds.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ds.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
             c0.setCellStyle(ds);
             // col 1: TruckID
-            r.createCell(1).setCellValue((Integer)entry[1]);
+            r.createCell(1).setCellValue(((Number)entry[1]).intValue());
             // col 2: Role (String)
             r.createCell(2).setCellValue((String)entry[2]);
             // col 3: ProvIdx
-            r.createCell(3).setCellValue((Integer)entry[3]);
+            r.createCell(3).setCellValue(((Number)entry[3]).intValue());
             // col 4: ProviderName (String)
             r.createCell(4).setCellValue((String)entry[4]);
             // col 5: Material (String)
             r.createCell(5).setCellValue((String)entry[5]);
-            // col 6: Payload_t (double)
-            org.apache.poi.xssf.usermodel.XSSFCell c6 = r.createCell(6); c6.setCellValue((Double)entry[6]);
+            // col 6: Payload_t
+            org.apache.poi.xssf.usermodel.XSSFCell c6 = r.createCell(6); c6.setCellValue(((Number)entry[6]).doubleValue());
             org.apache.poi.xssf.usermodel.XSSFCellStyle ns = wb.createCellStyle(); ns.cloneStyleFrom(numStyle); if (alt) ns.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
             c6.setCellStyle(ns);
             // col 7: TripNum
-            r.createCell(7).setCellValue((Integer)entry[7]);
+            r.createCell(7).setCellValue(((Number)entry[7]).intValue());
             // col 8: CumulMass_t
-            org.apache.poi.xssf.usermodel.XSSFCell c8 = r.createCell(8); c8.setCellValue((Double)entry[8]);
+            org.apache.poi.xssf.usermodel.XSSFCell c8 = r.createCell(8); c8.setCellValue(((Number)entry[8]).doubleValue());
             org.apache.poi.xssf.usermodel.XSSFCellStyle ns2 = wb.createCellStyle(); ns2.cloneStyleFrom(numStyle); if (alt) ns2.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns2.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
             c8.setCellStyle(ns2);
             // col 9: TransitTime_d
-            org.apache.poi.xssf.usermodel.XSSFCell c9 = r.createCell(9); c9.setCellValue((Double)entry[9]);
+            org.apache.poi.xssf.usermodel.XSSFCell c9 = r.createCell(9); c9.setCellValue(((Number)entry[9]).doubleValue());
             org.apache.poi.xssf.usermodel.XSSFCellStyle ns3 = wb.createCellStyle(); ns3.cloneStyleFrom(numStyle); if (alt) ns3.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns3.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
             c9.setCellStyle(ns3);
             row++;
