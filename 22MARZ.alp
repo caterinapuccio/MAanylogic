@@ -4794,11 +4794,7 @@ CEDNoIS += kgWasteN * main.CEDWasteToLandfill[matIdx];]]></EntryAction>
 						<Point><X>140</X><Y>150</Y></Point>
 					</Points>
 					<IconOffset>30.0</IconOffset>
-					<Properties Source="9001000000002" Target="9001000000003" Trigger="timeout">
-						<Timeout Class="CodeUnitValue">
-							<Code><![CDATA[0.5]]></Code>
-							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
-						</Timeout>
+					<Properties Source="9001000000002" Target="9001000000003" Trigger="condition">
 						<Condition><![CDATA[main.useIS && bookingAccepted]]></Condition>
 						<Rate Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
@@ -4824,11 +4820,7 @@ CEDNoIS += kgWasteN * main.CEDWasteToLandfill[matIdx];]]></EntryAction>
 						<Point><X>0</X><Y>130</Y></Point>
 					</Points>
 					<IconOffset>20.0</IconOffset>
-					<Properties Source="9001000000002" Target="9001000000004" Trigger="timeout">
-						<Timeout Class="CodeUnitValue">
-							<Code><![CDATA[0.5]]></Code>
-							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
-						</Timeout>
+					<Properties Source="9001000000002" Target="9001000000004" Trigger="condition">
 						<Condition><![CDATA[main.useIS && !bookingAccepted]]></Condition>
 						<Rate Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
@@ -4855,11 +4847,7 @@ CEDNoIS += kgWasteN * main.CEDWasteToLandfill[matIdx];]]></EntryAction>
 						<Point><X>-150</X><Y>150</Y></Point>
 					</Points>
 					<IconOffset>20.0</IconOffset>
-					<Properties Source="9001000000002" Target="9001000000005" Trigger="timeout">
-						<Timeout Class="CodeUnitValue">
-							<Code><![CDATA[0.5]]></Code>
-							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
-						</Timeout>
+					<Properties Source="9001000000002" Target="9001000000005" Trigger="condition">
 						<Condition><![CDATA[!main.useIS]]></Condition>
 						<Rate Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
