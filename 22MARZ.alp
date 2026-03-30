@@ -404,6 +404,15 @@ public void validateExcelConnections() {
     chkRange("Intermediate", "opexPerStorageUnitPerMonth", "B", 8,  opexPerStorageUnitPerMonth,        0.0,   1e5,  false);
     chkRange("Intermediate", "salvageValuePercent",        "B", 9,  salvageValuePercent,               0.0,   1.0,  false);
     chkRange("Intermediate", "discountRate",               "B", 10, discountRate,                      0.001, 0.5,  false);
+    // ── Intermediate: incineration parameters ──────────────────────────────
+    intermediate.burningThreshold_t        = Input_data.getCellNumericValue("Intermediate", 11, 2);
+    intermediate.emissionFactor_CO2_kgPerKg = Input_data.getCellNumericValue("Intermediate", 12, 2);
+    intermediate.emissionFactor_CO_kgPerKg  = Input_data.getCellNumericValue("Intermediate", 13, 2);
+    intermediate.emissionFactor_NOx_kgPerKg = Input_data.getCellNumericValue("Intermediate", 14, 2);
+    chkRange("Intermediate", "burningThreshold_t",          "B", 11, intermediate.burningThreshold_t,          1.0,   1e5,  false);
+    chkRange("Intermediate", "emissionFactor_CO2_kgPerKg",  "B", 12, intermediate.emissionFactor_CO2_kgPerKg,  0.0,   5.0,  false);
+    chkRange("Intermediate", "emissionFactor_CO_kgPerKg",   "B", 13, intermediate.emissionFactor_CO_kgPerKg,   0.0,   1.0,  false);
+    chkRange("Intermediate", "emissionFactor_NOx_kgPerKg",  "B", 14, intermediate.emissionFactor_NOx_kgPerKg,  0.0,   1.0,  false);
 
     // ── TruckFleet sheet (Phase 2: single global parameter row) ──────────────
     // CE3.0 Phase 2: old per-AgentType rows removed. Now one data row (row 3) with 11 cols.
@@ -4700,38 +4709,77 @@ CEDNoIS += kgWasteR * main.CEDWasteToLandfill[matIdx];]]></EntryAction>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="160" Height="70">
-						<EntryAction><![CDATA[// NON-IS BASELINE: All waste → EndOfLife (landfill) ─────────────────
+						<EntryAction><![CDATA[// NON-IS BASELINE: Provider → truck → Intermediate landfill buffer ──────
+// Waste is physically collected by a truck, delivered to Intermediate,
+// and accumulated in WasteToBeBurned for the weekly combustion DES cycle.
+// LCA accounting for the transport leg is recorded here (provider-side);
+// incineration emissions are recorded in Intermediate.combustionSlagEvent.
 int matIdx = main.matIndex(myMaterial);
 double distEoL = main.haversineKm(providerLat, providerLon,
                                    main.intermediateLat, main.intermediateLon);
+
+// ── Financial: landfill disposal + transport cost ────────────────────────
 double disposalCost = rawWaste * main.costLandfillPerMat[matIdx];
-main.intermediate.totalWasteReceived += rawWaste;
 this.financialBalance            -= disposalCost;
 this.totalCosts                  += disposalCost;
 main.landfillCostPerMat[matIdx]  += disposalCost;
-double GWPTransportToLandfill  = main.transportGWPCalc(rawWaste, distEoL);
+double GWPTransportToLandfill = main.transportGWPCalc(rawWaste, distEoL);
 double tCost = main.transportCostCalc(rawWaste, distEoL);
-main.transportGWPNonISProcesses += GWPTransportToLandfill;
-main.networkTotalTransportCostNonISProcesses += tCost;
+main.transportGWPNonISProcesses                += GWPTransportToLandfill;
+main.networkTotalTransportCostNonISProcesses   += tCost;
 main.totalTransportGWP  += GWPTransportToLandfill;
 main.totalTransportCost += tCost;
 this.totalCosts         += tCost;
 this.financialBalance   -= tCost;
 
-// ── GWP breakdown tracking (no-IS baseline: all to landfill) ──────────
+// ── GWP breakdown tracking (no-IS baseline: all to landfill) ─────────────
 double kgWasteN = rawWaste * 1000.0;
 GWPActualTransport += GWPTransportToLandfill;
 GWPActualProcess   += kgWasteN * main.GWPWasteToLandfill[matIdx];
 GWPActualTotal     += GWPTransportToLandfill + kgWasteN * main.GWPWasteToLandfill[matIdx];
-// No-IS baseline (no IS) = actual (this is already the baseline path)
 GWPNoIS  += GWPTransportToLandfill + kgWasteN * main.GWPWasteToLandfill[matIdx];
-// HTP / LUP / CED (landfill = same as no-IS)
-HTPActualProcess  += kgWasteN * main.HTPWasteToLandfill[matIdx];
+HTPActualProcess += kgWasteN * main.HTPWasteToLandfill[matIdx];
 HTPNoIS += kgWasteN * main.HTPWasteToLandfill[matIdx];
-LUPActualProcess  += kgWasteN * main.LUPWasteToLandfill[matIdx];
+LUPActualProcess += kgWasteN * main.LUPWasteToLandfill[matIdx];
 LUPNoIS += kgWasteN * main.LUPWasteToLandfill[matIdx];
-CEDActualProcess  += kgWasteN * main.CEDWasteToLandfill[matIdx];
-CEDNoIS += kgWasteN * main.CEDWasteToLandfill[matIdx];]]></EntryAction>
+CEDActualProcess += kgWasteN * main.CEDWasteToLandfill[matIdx];
+CEDNoIS += kgWasteN * main.CEDWasteToLandfill[matIdx];
+
+// ── Physical truck dispatch: Provider → Intermediate landfill buffer ──────
+// Reuses same truck pool as IS path. Truck carries rawWaste t from this site
+// to Intermediate; on arrival, GarbageTruck.home calls receiveLandfillWaste().
+if (rawWaste > 0 && !isTransporting) {
+    GarbageTruck truck = null;
+    int pIdx = getIndex();
+    if (pIdx >= 0 && pIdx < main.garbageTrucks.size()) {
+        GarbageTruck dedicated = main.garbageTrucks.get(pIdx);
+        if (!dedicated.busy) truck = dedicated;
+    }
+    if (truck == null) {
+        for (GarbageTruck t : main.garbageTrucks) {
+            if (t.isJolly && !t.busy) { truck = t; break; }
+        }
+    }
+    if (truck != null) {
+        truck.targetLat        = providerLat;
+        truck.targetLon        = providerLon;
+        truck.sourceProvider   = this;
+        truck.isLandfillRun    = true;   // flag: deliver to landfill buffer, not recycling
+        isTransporting         = true;
+        send("Go", truck);
+        if (getIndex() == 0 || truck.truckIndex == 0) {
+            traceln(String.format(
+                "[DISPATCH-NonIS] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s → landfill",
+                time(DAY), getIndex(), companyName, truck.truckIndex, truck.isJolly, rawWaste, myMaterial));
+        }
+    } else {
+        // No truck available: add directly to Intermediate buffer (fallback, no transport delay)
+        main.intermediate.receiveLandfillWaste(rawWaste);
+        traceln(String.format(
+            "[DISPATCH-NonIS-FALLBACK] t=%.2fd | prov%d no truck available — direct buffer add %.3ft %s",
+            time(DAY), getIndex(), rawWaste, myMaterial));
+    }
+}]]></EntryAction>
 						<FillColor/>
 					</Properties>
 				</StatechartElement>
@@ -9984,6 +10032,166 @@ else return black;]]></Body>
 						</ParameterEditor>
 					</Properties>                 
 				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301001</Id>
+					<Name><![CDATA[WasteToBeBurned]]></Name>
+					<Description><![CDATA[Accumulated non-IS waste (t) awaiting incineration in primary combustion chamber. Filled by receiveLandfillWaste() when landfill trucks arrive; drained weekly by combustion DES.]]></Description>
+					<X>60</X><Y>930</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301002</Id>
+					<Name><![CDATA[WasteBurned]]></Name>
+					<Description><![CDATA[Cumulative waste (t) incinerated over entire simulation. Incremented after each combustion cycle completes.]]></Description>
+					<X>60</X><Y>960</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301003</Id>
+					<Name><![CDATA[isBurning]]></Name>
+					<Description><![CDATA[True while the combustion DES is in progress (WasteDrying → Gasification → SlagFormation). Prevents re-entry until the cycle completes.]]></Description>
+					<X>60</X><Y>990</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[boolean]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[false]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301004</Id>
+					<Name><![CDATA[burningThreshold_t]]></Name>
+					<Description><![CDATA[Minimum accumulated waste (t) in WasteToBeBurned before a combustion cycle is triggered. Read from Intermediate sheet row 11. Default 20 t.]]></Description>
+					<X>60</X><Y>1020</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[20.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301005</Id>
+					<Name><![CDATA[emissionFactor_CO2_kgPerKg]]></Name>
+					<Description><![CDATA[Direct CO2 emission factor (kg CO2 per kg waste burned). Read from Intermediate sheet row 12. Default 0.95 (IPCC 2006 MSW incineration).]]></Description>
+					<X>60</X><Y>1050</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.95]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301006</Id>
+					<Name><![CDATA[emissionFactor_CO_kgPerKg]]></Name>
+					<Description><![CDATA[Carbon monoxide emission factor (kg CO per kg waste burned). Read from Intermediate sheet row 13. Default 0.001 (EU IED empirical estimate).]]></Description>
+					<X>60</X><Y>1080</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.001]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301007</Id>
+					<Name><![CDATA[emissionFactor_NOx_kgPerKg]]></Name>
+					<Description><![CDATA[NOx emission factor (kg NOx as NO2 per kg waste burned). Read from Intermediate sheet row 14. Default 0.0015 (EU IED / Arena 2012).]]></Description>
+					<X>60</X><Y>1110</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0015]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301008</Id>
+					<Name><![CDATA[totalCO2EmittedKg]]></Name>
+					<Description><![CDATA[Cumulative CO2 emitted (kg) from all incineration cycles over the simulation. Incremented in combustionSlagEvent action.]]></Description>
+					<X>60</X><Y>1140</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301009</Id>
+					<Name><![CDATA[totalCOEmittedKg]]></Name>
+					<Description><![CDATA[Cumulative CO emitted (kg) from all incineration cycles. Incremented in combustionSlagEvent action.]]></Description>
+					<X>60</X><Y>1170</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>8800000301010</Id>
+					<Name><![CDATA[totalNOxEmittedKg]]></Name>
+					<Description><![CDATA[Cumulative NOx emitted (kg as NO2) from all incineration cycles. Incremented in combustionSlagEvent action.]]></Description>
+					<X>60</X><Y>1200</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 			</Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -10562,6 +10770,210 @@ moveTo(intermediateLat, intermediateLon);
 // are retained in Main for backward dashboard compatibility but no longer updated here.
 ]]></Action>
 				</Event>
+				<Event>
+					<Id>8800000302001</Id>
+					<Name><![CDATA[weeklyLandfillBurnEvent]]></Name>
+					<Description><![CDATA[Weekly trigger for incineration DES. Fires every 7 days (offset 6.5d so it runs after recyclingProcessingEvent). If WasteToBeBurned > burningThreshold_t and no combustion is in progress, starts the DES chain: WasteDrying → Gasification → SlagFormation.]]></Description>
+					<X>60</X><Y>1230</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties TriggerType="timeout" Mode="cyclic">
+						<Timeout Class="CodeUnitValue">
+							<Code><![CDATA[7]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</Timeout>
+						<Rate Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="RateUnits"><![CDATA[PER_WEEK]]></Unit>
+						</Rate>
+						<Id>8800000302002</Id>
+						<OccurrenceAtTime>true</OccurrenceAtTime>
+						<OccurrenceDate>1772092800000</OccurrenceDate>
+						<OccurrenceTime Class="CodeUnitValue">
+							<Code><![CDATA[6.5]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</OccurrenceTime>
+						<RecurrenceCode Class="CodeUnitValue">
+							<Code><![CDATA[7]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</RecurrenceCode>
+						<Condition><![CDATA[true]]></Condition>
+					</Properties>
+					<Action><![CDATA[// ─── CE3.0: Weekly non-IS incineration trigger ──────────────────────────
+// This event models the Intermediate agent transitioning from BurnIdle → BurningWaste state.
+// The DES combustion chain (WasteDrying → Gasification → SlagFormation) is
+// modelled by three chained single-shot events triggered below.
+// BurningWaste → BurnIdle transition is triggered by combustionSlagEvent when done.
+if (WasteToBeBurned >= burningThreshold_t && !isBurning) {
+    isBurning = true;
+    traceln(String.format(
+        "[COMBUSTION-START] t=%.2fd | BurnIdle→WasteDrying | WasteToBeBurned=%.3ft (threshold=%.1ft) | initiating DES combustion chain",
+        time(DAY), WasteToBeBurned, burningThreshold_t));
+    // Start first DES phase: Waste Drying (moisture removal, <200°C) — 0.5h
+    combustionDryingEvent.restart(0.5 / 24.0, DAY);
+} else if (!isBurning) {
+    traceln(String.format(
+        "[COMBUSTION-SKIP] t=%.2fd | WasteToBeBurned=%.3ft < threshold=%.1ft | no combustion this week",
+        time(DAY), WasteToBeBurned, burningThreshold_t));
+}
+]]></Action>
+				</Event>
+				<Event>
+					<Id>8800000302003</Id>
+					<Name><![CDATA[combustionDryingEvent]]></Name>
+					<Description><![CDATA[DES Phase 1 — Waste Drying: moisture removal at temperatures below 200°C. Fires 0.5h after weeklyLandfillBurnEvent starts combustion. Triggers Gasification phase.]]></Description>
+					<X>60</X><Y>1260</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties TriggerType="timeout" Mode="cyclic">
+						<Timeout Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</Timeout>
+						<Rate Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="RateUnits"><![CDATA[PER_WEEK]]></Unit>
+						</Rate>
+						<Id>8800000302004</Id>
+						<OccurrenceAtTime>true</OccurrenceAtTime>
+						<OccurrenceDate>1772092800000</OccurrenceDate>
+						<OccurrenceTime Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</OccurrenceTime>
+						<RecurrenceCode Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</RecurrenceCode>
+						<Condition><![CDATA[true]]></Condition>
+					</Properties>
+					<Action><![CDATA[// ─── CE3.0: DES Phase 1 — Waste Drying ─────────────────────────────────
+// Primary chamber: moisture is driven off at <200°C before gasification begins.
+// Duration simulated as 0.5h; next phase starts after 1.0h (gasification).
+double wasteKg = WasteToBeBurned * 1000.0;
+traceln(String.format(
+    "[COMBUSTION-DRYING] t=%.2fd | DES-Phase1 | mass=%.1fkg | moisture removal <200°C | → Gasification in 1.0h",
+    time(DAY), wasteKg));
+// Advance DES to Phase 2: Gasification (thermal decomposition 650–900°C) — 1.0h
+combustionGasificationEvent.restart(1.0 / 24.0, DAY);
+]]></Action>
+				</Event>
+				<Event>
+					<Id>8800000302005</Id>
+					<Name><![CDATA[combustionGasificationEvent]]></Name>
+					<Description><![CDATA[DES Phase 2 — Gasification: thermal decomposition at 650–900°C. Waste is converted to syngas (CO, H2, CH4) and char. Fires 1.0h after DryingEvent. Triggers SlagFormation phase.]]></Description>
+					<X>60</X><Y>1290</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties TriggerType="timeout" Mode="cyclic">
+						<Timeout Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</Timeout>
+						<Rate Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="RateUnits"><![CDATA[PER_WEEK]]></Unit>
+						</Rate>
+						<Id>8800000302006</Id>
+						<OccurrenceAtTime>true</OccurrenceAtTime>
+						<OccurrenceDate>1772092800000</OccurrenceDate>
+						<OccurrenceTime Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</OccurrenceTime>
+						<RecurrenceCode Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</RecurrenceCode>
+						<Condition><![CDATA[true]]></Condition>
+					</Properties>
+					<Action><![CDATA[// ─── CE3.0: DES Phase 2 — Gasification (thermal decomposition) ─────────
+// Primary combustion chamber: 650–900°C. Organic fraction thermally decomposed
+// into syngas (CO, H₂, CH₄, volatile tars) and fixed carbon (char).
+// Inorganic non-combustibles remain as raw slag for Phase 3.
+// Duration: 1.0h; next phase (SlagFormation) starts after 0.5h.
+double wasteKg = WasteToBeBurned * 1000.0;
+// Approximate syngas fraction (illustrative: ~70% of organic mass converted to gas)
+double syngasKg = wasteKg * 0.70;
+double charKg   = wasteKg * 0.15;
+double inertKg  = wasteKg * 0.15;  // inorganic → slag
+traceln(String.format(
+    "[COMBUSTION-GASIFICATION] t=%.2fd | DES-Phase2 | mass=%.1fkg | 650–900°C | syngas≈%.1fkg, char≈%.1fkg, inert≈%.1fkg | → SlagFormation in 0.5h",
+    time(DAY), wasteKg, syngasKg, charKg, inertKg));
+// Advance DES to Phase 3: Slag Formation — 0.5h
+combustionSlagEvent.restart(0.5 / 24.0, DAY);
+]]></Action>
+				</Event>
+				<Event>
+					<Id>8800000302007</Id>
+					<Name><![CDATA[combustionSlagEvent]]></Name>
+					<Description><![CDATA[DES Phase 3 — Slag Formation: residual ash and inorganic non-combustibles consolidated. LCA emissions calculated (CO2, CO, NOx). WasteToBeBurned transferred to WasteBurned. isBurning reset. BurningWaste → BurnIdle.]]></Description>
+					<X>60</X><Y>1320</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties TriggerType="timeout" Mode="cyclic">
+						<Timeout Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</Timeout>
+						<Rate Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="RateUnits"><![CDATA[PER_WEEK]]></Unit>
+						</Rate>
+						<Id>8800000302008</Id>
+						<OccurrenceAtTime>true</OccurrenceAtTime>
+						<OccurrenceDate>1772092800000</OccurrenceDate>
+						<OccurrenceTime Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</OccurrenceTime>
+						<RecurrenceCode Class="CodeUnitValue">
+							<Code><![CDATA[36500]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</RecurrenceCode>
+						<Condition><![CDATA[true]]></Condition>
+					</Properties>
+					<Action><![CDATA[// ─── CE3.0: DES Phase 3 — Slag Formation + LCA Emissions Calculation ───
+// Final primary chamber phase: residual char oxidised, inorganic fraction
+// vitrified as ash/slag. Combustion complete → BurningWaste → BurnIdle.
+double wasteKg  = WasteToBeBurned * 1000.0;
+double slagKg   = wasteKg * 0.15;  // ~15% inorganic residue (bottom ash + fly ash)
+
+// ── LCA incineration emissions (emission factors from Excel rows 12-14) ──
+double co2Kg  = wasteKg * emissionFactor_CO2_kgPerKg;
+double coKg   = wasteKg * emissionFactor_CO_kgPerKg;
+double noxKg  = wasteKg * emissionFactor_NOx_kgPerKg;
+
+// Accumulate cumulative incineration emissions
+totalCO2EmittedKg  += co2Kg;
+totalCOEmittedKg   += coKg;
+totalNOxEmittedKg  += noxKg;
+
+// Transfer waste mass: WasteToBeBurned → WasteBurned (log)
+WasteBurned       += WasteToBeBurned;
+double burnedThisCycle = WasteToBeBurned;
+WasteToBeBurned    = 0.0;
+
+// Release combustion lock: BurningWaste → BurnIdle
+isBurning = false;
+
+traceln(String.format(
+    "[COMBUSTION-COMPLETE] t=%.2fd | DES-Phase3-SlagFormation | burned=%.3ft (%.1fkg) | slag≈%.1fkg" +
+    " | CO2=%.1fkg | CO=%.3fkg | NOx=%.3fkg" +
+    " | cumBurned=%.3ft | cumCO2=%.1fkg | cumNOx=%.3fkg | BurningWaste→BurnIdle",
+    time(DAY), burnedThisCycle, wasteKg, slagKg,
+    co2Kg, coKg, noxKg,
+    WasteBurned, totalCO2EmittedKg, totalNOxEmittedKg));
+]]></Action>
+				</Event>
 			</Events>
 			<Functions>
 				<Function AccessType="public" StaticFunction="false">
@@ -10934,6 +11346,32 @@ if (neededFromTier2 <= tier2Free) {
 totalBookingsRejected[matIdx]++;
 if (main.debugMode) traceln("Intermediate acceptResidue[" + mat + "]: REJECTED (storage full). " + String.format("%.2f", qty) + " t → landfill");
 return false;]]></Body>
+				</Function>
+				<Function>
+					<ReturnType><![CDATA[void]]></ReturnType>
+					<Id>8800000303001</Id>
+					<Name><![CDATA[receiveLandfillWaste]]></Name>
+					<Description><![CDATA[Called by a GarbageTruck on arrival at Intermediate after a non-IS landfill run. Adds payload to WasteToBeBurned buffer. The weekly combustionDES will incinerate it.]]></Description>
+					<X>60</X><Y>1380</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Parameter>
+						<Name><![CDATA[qty]]></Name>
+						<Type><![CDATA[double]]></Type>
+					</Parameter>
+					<Body><![CDATA[// ─── CE3.0: Receive landfill waste from non-IS Provider truck ───────────
+// Called from GarbageTruck.home entry action when isLandfillRun = true.
+// qty (tonnes) is added to the incineration buffer.
+// The weeklyLandfillBurnEvent will trigger the combustion DES once
+// WasteToBeBurned >= burningThreshold_t.
+WasteToBeBurned      += qty;
+totalWasteReceived   += qty;
+traceln(String.format(
+    "[LANDFILL-RECEIVE] t=%.2fd | +%.3ft → WasteToBeBurned=%.3ft (threshold=%.1ft isBurning=%b)",
+    time(DAY), qty, WasteToBeBurned, burningThreshold_t, isBurning));
+]]></Body>
 				</Function>
 			</Functions>
 			<AgentLinks>
@@ -12023,6 +12461,22 @@ if (isJolly) {
 						</InitialValue>
 					</Properties>
 				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9990000100001</Id>
+					<Name><![CDATA[isLandfillRun]]></Name>
+					<Description><![CDATA[True when this truck is transporting non-IS waste to Intermediate for incineration. Set by NonIS_Disposal dispatch; cleared in home entry after receiveLandfillWaste() is called.]]></Description>
+					<X>60</X><Y>220</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[boolean]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[false]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 </Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -12065,6 +12519,14 @@ if (sourceProvider != null) {
 if (!isJolly && myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
     Provider home_p = (Provider) main.providers.get(myProviderIndex);
     moveTo(home_p.providerLat, home_p.providerLon);
+}
+
+// ── 3b. Landfill run: notify Intermediate of waste delivery ─────────────
+if (isLandfillRun) {
+    if (lastPayloadTonnes > 0) {
+        main.intermediate.receiveLandfillWaste(lastPayloadTonnes);
+    }
+    isLandfillRun = false;
 }
 
 // ── 4. Update trip counters ───────────────────────────────────────────────
