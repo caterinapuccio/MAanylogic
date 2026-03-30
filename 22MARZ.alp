@@ -4658,7 +4658,9 @@ if (main.debugMode) {
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="150" Height="70">
-						<EntryAction><![CDATA[// IS PATH: Booking rejected → self-haul to landfill ─────────────────
+						<EntryAction><![CDATA[// IS_REJECTED: booking could not be accepted (Intermediate storage full).
+// t_RejectedDone immediately routes to NonIS_Disposal, which handles all
+// cost, GWP, and truck dispatch accounting. Nothing to compute here.
 if (getIndex() == 0) {
     int _mIdxR = main.matIndex(myMaterial);
     double _t1freeR = Math.max(0.0, main.intermediate.tier1CapPerMat[_mIdxR]
@@ -4667,38 +4669,7 @@ if (getIndex() == 0) {
                                   - main.intermediate.tier2UsedCapacity);
     traceln(String.format("[PROV0-IS-REJECTED] t=%.2fd | rawWaste=%.3ft | tier1Free=%.2ft tier2Free=%.2ft",
         time(DAY), rawWaste, _t1freeR, _t2freeR));
-}
-int matIdx = main.matIndex(myMaterial);
-double distEoL = main.haversineKm(providerLat, providerLon,
-                                   main.intermediateLat, main.intermediateLon);
-double disposalCost = rawWaste * main.costLandfillPerMat[matIdx];
-main.intermediate.totalWasteReceived += rawWaste;
-this.financialBalance            -= disposalCost;
-this.totalCosts                  += disposalCost;
-main.landfillCostPerMat[matIdx]  += disposalCost;
-double GWPTransportToLandfill  = main.transportGWPCalc(rawWaste, distEoL);
-double tCost = main.transportCostCalc(rawWaste, distEoL);
-main.transportGWPNonISProcesses += GWPTransportToLandfill;
-main.networkTotalTransportCostNonISProcesses += tCost;
-main.totalTransportGWP  += GWPTransportToLandfill;
-main.totalTransportCost += tCost;
-this.totalCosts         += tCost;
-this.financialBalance   -= tCost;
-
-// ── GWP breakdown tracking (IS-rejected → landfill, same as no-IS) ────
-double kgWasteR = rawWaste * 1000.0;
-GWPActualTransport += GWPTransportToLandfill;
-GWPActualProcess   += kgWasteR * main.GWPWasteToLandfill[matIdx];
-GWPActualTotal     += GWPTransportToLandfill + kgWasteR * main.GWPWasteToLandfill[matIdx];
-// No-IS baseline (no IS) = actual (same path)
-GWPNoIS  += GWPTransportToLandfill + kgWasteR * main.GWPWasteToLandfill[matIdx];
-// HTP / LUP / CED (landfill = same as no-IS)
-HTPActualProcess  += kgWasteR * main.HTPWasteToLandfill[matIdx];
-HTPNoIS += kgWasteR * main.HTPWasteToLandfill[matIdx];
-LUPActualProcess  += kgWasteR * main.LUPWasteToLandfill[matIdx];
-LUPNoIS += kgWasteR * main.LUPWasteToLandfill[matIdx];
-CEDActualProcess  += kgWasteR * main.CEDWasteToLandfill[matIdx];
-CEDNoIS += kgWasteR * main.CEDWasteToLandfill[matIdx];]]></EntryAction>
+}]]></EntryAction>
 						<FillColor/>
 					</Properties>
 				</StatechartElement>
@@ -4865,7 +4836,7 @@ if (rawWaste > 0 && !isTransporting) {
 					<Id>9001000000022</Id>
 					<Name><![CDATA[t_IS_Rejected]]></Name>
 					<X>120</X><Y>380</Y>
-					<Label><X>10</X><Y>0</Y></Label>
+					<Label><X>5</X><Y>35</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -4965,12 +4936,10 @@ if (rawWaste > 0 && !isTransporting) {
 					<Points>
 						<Point><X>0</X><Y>0</Y></Point>
 						<Point><X>-50</X><Y>0</Y></Point>
-						<Point><X>-50</X><Y>-60</Y></Point>
-						<Point><X>-50</X><Y>-450</Y></Point>
-						<Point><X>0</X><Y>-450</Y></Point>
+						<Point><X>-70</X><Y>0</Y></Point>
 					</Points>
 					<IconOffset>30.0</IconOffset>
-					<Properties Source="9001000000004" Target="9001000000001" Trigger="timeout">
+					<Properties Source="9001000000004" Target="9001000000005" Trigger="timeout">
 						<Timeout Class="CodeUnitValue">
 							<Code><![CDATA[0]]></Code>
 							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
