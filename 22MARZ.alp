@@ -673,6 +673,148 @@ public void exportValidationReport() {
         ex.printStackTrace();
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRUCK MOVEMENT LOG — CE 3.0 / 22MARZ
+// Each completed trip is appended by GarbageTruck.home.EntryAction.
+// Columns: SimDay | TruckID | Role | ProvIdx | ProviderName | Material
+//          | Payload_t | TripNum | CumulMass_t | TransitTime_days
+// ═══════════════════════════════════════════════════════════════════════════════
+java.util.ArrayList<Object[]> truckLog = new java.util.ArrayList<>();
+
+public void exportTruckLog() {
+    String fileName = "22MARZ_TruckLog.xlsx";
+    String outPath  = System.getProperty("user.dir") + java.io.File.separator + fileName;
+
+    try {
+        org.apache.poi.xssf.usermodel.XSSFWorkbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+
+        // ── Styles ────────────────────────────────────────────────────────────
+        org.apache.poi.xssf.usermodel.XSSFFont hdrFont = wb.createFont();
+        hdrFont.setBold(true);
+        hdrFont.setFontHeightInPoints((short)11);
+        hdrFont.setColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)255,(byte)255,(byte)255}, null));
+
+        org.apache.poi.xssf.usermodel.XSSFCellStyle hdrStyle = wb.createCellStyle();
+        hdrStyle.setFont(hdrFont);
+        hdrStyle.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)31,(byte)73,(byte)125}, null));
+        hdrStyle.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+
+        org.apache.poi.xssf.usermodel.XSSFCellStyle numStyle = wb.createCellStyle();
+        org.apache.poi.xssf.usermodel.XSSFDataFormat fmt = wb.createDataFormat();
+        numStyle.setDataFormat(fmt.getFormat("0.000"));
+
+        org.apache.poi.xssf.usermodel.XSSFCellStyle dayStyle = wb.createCellStyle();
+        dayStyle.setDataFormat(fmt.getFormat("0.00"));
+
+        org.apache.poi.xssf.usermodel.XSSFCellStyle altStyle = wb.createCellStyle();
+        altStyle.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null));
+        altStyle.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+
+        // ── Sheet 1: Trip Log (flat table) ────────────────────────────────────
+        org.apache.poi.xssf.usermodel.XSSFSheet log = wb.createSheet("TripLog");
+        int[] colWidths = {2000, 2000, 2800, 2500, 6000, 5000, 3500, 2500, 4000, 4000};
+        String[] headers = {"SimDay","TruckID","Role","ProvIdx","ProviderName","Material",
+                            "Payload_t","TripNum","CumulMass_t","TransitTime_d"};
+        for (int c = 0; c < colWidths.length; c++) log.setColumnWidth(c, colWidths[c]);
+
+        org.apache.poi.xssf.usermodel.XSSFRow hdrRow = log.createRow(0);
+        for (int c = 0; c < headers.length; c++) {
+            org.apache.poi.xssf.usermodel.XSSFCell cell = hdrRow.createCell(c);
+            cell.setCellValue(headers[c]);
+            cell.setCellStyle(hdrStyle);
+        }
+
+        int row = 1;
+        for (Object[] entry : truckLog) {
+            org.apache.poi.xssf.usermodel.XSSFRow r = log.createRow(row);
+            boolean alt = (row % 2 == 0);
+            // col 0: SimDay (double)
+            org.apache.poi.xssf.usermodel.XSSFCell c0 = r.createCell(0); c0.setCellValue((Double)entry[0]);
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ds = wb.createCellStyle(); ds.cloneStyleFrom(dayStyle); if (alt) ds.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ds.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+            c0.setCellStyle(ds);
+            // col 1: TruckID
+            r.createCell(1).setCellValue((Integer)entry[1]);
+            // col 2: Role (String)
+            r.createCell(2).setCellValue((String)entry[2]);
+            // col 3: ProvIdx
+            r.createCell(3).setCellValue((Integer)entry[3]);
+            // col 4: ProviderName (String)
+            r.createCell(4).setCellValue((String)entry[4]);
+            // col 5: Material (String)
+            r.createCell(5).setCellValue((String)entry[5]);
+            // col 6: Payload_t (double)
+            org.apache.poi.xssf.usermodel.XSSFCell c6 = r.createCell(6); c6.setCellValue((Double)entry[6]);
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ns = wb.createCellStyle(); ns.cloneStyleFrom(numStyle); if (alt) ns.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+            c6.setCellStyle(ns);
+            // col 7: TripNum
+            r.createCell(7).setCellValue((Integer)entry[7]);
+            // col 8: CumulMass_t
+            org.apache.poi.xssf.usermodel.XSSFCell c8 = r.createCell(8); c8.setCellValue((Double)entry[8]);
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ns2 = wb.createCellStyle(); ns2.cloneStyleFrom(numStyle); if (alt) ns2.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns2.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+            c8.setCellStyle(ns2);
+            // col 9: TransitTime_d
+            org.apache.poi.xssf.usermodel.XSSFCell c9 = r.createCell(9); c9.setCellValue((Double)entry[9]);
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ns3 = wb.createCellStyle(); ns3.cloneStyleFrom(numStyle); if (alt) ns3.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(new byte[]{(byte)235,(byte)241,(byte)250}, null)); if (alt) ns3.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+            c9.setCellStyle(ns3);
+            row++;
+        }
+        // Freeze header row
+        log.createFreezePane(0, 1);
+
+        // ── Sheet 2: Truck Summary (one row per truck) ───────────────────────
+        org.apache.poi.xssf.usermodel.XSSFSheet sumSheet = wb.createSheet("TruckSummary");
+        sumSheet.setColumnWidth(0, 2000); sumSheet.setColumnWidth(1, 2800);
+        sumSheet.setColumnWidth(2, 2500); sumSheet.setColumnWidth(3, 6000);
+        sumSheet.setColumnWidth(4, 5000); sumSheet.setColumnWidth(5, 3500);
+        sumSheet.setColumnWidth(6, 4000);
+
+        String[] sumHdrs = {"TruckID","Role","ProvIdx","ProviderName","Material","Trips","TotalMass_t"};
+        org.apache.poi.xssf.usermodel.XSSFRow sumHdr = sumSheet.createRow(0);
+        for (int c = 0; c < sumHdrs.length; c++) {
+            org.apache.poi.xssf.usermodel.XSSFCell cell = sumHdr.createCell(c);
+            cell.setCellValue(sumHdrs[c]);
+            cell.setCellStyle(hdrStyle);
+        }
+
+        // Build per-truck summary from garbageTrucks population
+        int sr = 1;
+        for (int i = 0; i < garbageTrucks.size(); i++) {
+            GarbageTruck gt = garbageTrucks.get(i);
+            String role = gt.isJolly ? "jolly" : ("dedicated#" + gt.myProviderIndex);
+            String provName = "—";
+            String material = "mixed";
+            if (!gt.isJolly && gt.myProviderIndex >= 0 && gt.myProviderIndex < providers.size()) {
+                Provider p = (Provider) providers.get(gt.myProviderIndex);
+                provName = p.companyName;
+                material = p.myMaterial;
+            }
+            org.apache.poi.xssf.usermodel.XSSFRow sr_row = sumSheet.createRow(sr++);
+            sr_row.createCell(0).setCellValue(gt.truckIndex);
+            sr_row.createCell(1).setCellValue(role);
+            sr_row.createCell(2).setCellValue(gt.myProviderIndex);
+            sr_row.createCell(3).setCellValue(provName);
+            sr_row.createCell(4).setCellValue(material);
+            sr_row.createCell(5).setCellValue(gt.tripsCompleted);
+            org.apache.poi.xssf.usermodel.XSSFCell mc = sr_row.createCell(6); mc.setCellValue(gt.totalMassCarried);
+            org.apache.poi.xssf.usermodel.XSSFCellStyle ns4 = wb.createCellStyle(); ns4.cloneStyleFrom(numStyle);
+            mc.setCellStyle(ns4);
+        }
+        sumSheet.createFreezePane(0, 1);
+
+        // ── Write file ───────────────────────────────────────────────────────
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(outPath);
+        wb.write(fos);
+        fos.close();
+        wb.close();
+        traceln("[CE3] Truck log exported: " + outPath + " (" + truckLog.size() + " trip records, " + garbageTrucks.size() + " trucks)");
+
+    } catch (Exception ex) {
+        traceln("[CE3 TruckLog] ERROR writing log: " + ex.getMessage());
+        ex.printStackTrace();
+    }
+}
+
 ]]></AdditionalClassCode>
 			<StartupCode><![CDATA[// ═══ CE 3.0 STARTUP (22MARZ): Read from 22MARZ.xlsx ════════════════════════
 traceln(">>> CE3.0 STARTUP 22MARZ: onStartup() entered");
@@ -2202,7 +2344,8 @@ currentYear++;
 // Export validation + connection report at end of 10-year horizon
 if (currentYear >= 10) {
     exportValidationReport();
-    traceln("[CE3] Validation report exported to working directory at year " + currentYear);
+    exportTruckLog();
+    traceln("[CE3] Validation + truck log exported to working directory at year " + currentYear);
 }
 ]]></Action>
 				</Event>
@@ -11947,24 +12090,59 @@ if (isJolly) {
 						<EntryAction><![CDATA[busy = false;
 lorry.setVisible(false);
 isReturning = false;
-// Notify dispatching Provider that transport is complete
+
+// ── 1. Capture provider info BEFORE clearing sourceProvider ──────────────
+String _logProvName = "?";
+String _logMaterial = "?";
+int    _logProvIdx  = myProviderIndex;
+if (sourceProvider != null) {
+    Provider _sp = (Provider) sourceProvider;
+    _logProvName = _sp.companyName;
+    _logMaterial = _sp.myMaterial;
+    _logProvIdx  = _sp.getIndex();
+} else if (myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
+    Provider _sp = (Provider) main.providers.get(myProviderIndex);
+    _logProvName = _sp.companyName;
+    _logMaterial = _sp.myMaterial;
+}
+
+// ── 2. Notify Provider and clear sourceProvider ──────────────────────────
 if (sourceProvider != null) {
     Provider p = (Provider) sourceProvider;
     p.isTransporting = false;
     p.assignedTruckID = -1;
     sourceProvider = null;
 }
-// CE3.0: dedicated trucks drive back to provider; jolly trucks already at BIWASE
+
+// ── 3. Dedicated trucks return empty to provider site ────────────────────
 if (!isJolly && myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
     Provider home_p = (Provider) main.providers.get(myProviderIndex);
-    moveTo(home_p.providerLat, home_p.providerLon);  // return empty
+    moveTo(home_p.providerLat, home_p.providerLon);
 }
-// ── Traceability ──────────────────────────────────────────────────────────
+
+// ── 4. Update trip counters ───────────────────────────────────────────────
 tripsCompleted++;
 totalMassCarried += lastPayloadTonnes;
+
+// ── 5. Append to main.truckLog ────────────────────────────────────────────
+double transitDays = time(DAY) - lastPickupTime;
+main.truckLog.add(new Object[]{
+    time(DAY),                                           // [0] SimDay
+    truckIndex,                                          // [1] TruckID
+    isJolly ? "jolly" : ("dedicated#" + myProviderIndex), // [2] Role
+    _logProvIdx,                                         // [3] ProvIdx
+    _logProvName,                                        // [4] ProviderName
+    _logMaterial,                                        // [5] Material
+    lastPayloadTonnes,                                   // [6] Payload_t
+    tripsCompleted,                                      // [7] TripNum
+    totalMassCarried,                                    // [8] CumulMass_t
+    transitDays                                          // [9] TransitTime_d
+});
+
+// ── 6. Traceability console ───────────────────────────────────────────────
 if (main.debugMode) {
-    traceln(String.format("[TRUCK %d] DELIVERED t=%.2fd | trip#%d | payload=%.3ft | cumulative=%.3ft",
-        truckIndex, time(DAY), tripsCompleted, lastPayloadTonnes, totalMassCarried));
+    traceln(String.format("[TRUCK %d] DELIVERED t=%.2fd | trip#%d | %.3ft %s from %s | cumul=%.3ft | transit=%.2fd",
+        truckIndex, time(DAY), tripsCompleted, lastPayloadTonnes, _logMaterial, _logProvName, totalMassCarried, transitDays));
 }
 lastPayloadTonnes = 0.0;]]></EntryAction>
 						<FillColor/>
