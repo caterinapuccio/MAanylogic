@@ -894,10 +894,6 @@ for (int i = 0; i < providers.size(); i++) {
     p.companyName    = Input_data.getCellStringValue("Companies_Listing", row,  2);
     p.companyAddress = Input_data.getCellStringValue("Companies_Listing", row, 15); // CE3.0 Phase 2: col O (shifted by TruckCount insertion)
     p.jumpTo(p.providerLat, p.providerLon);
-    traceln("Provider[" + i + "] " + matStr
-        + " lat=" + String.format("%.4f", p.providerLat)
-        + " lon=" + String.format("%.4f", p.providerLon)
-        + " supply=" + String.format("%.2f", p.avgSupplyFromExcel) + " t/week");
 }
 
 // ─── 6b. Reposition dedicated GarbageTruck agents to their provider's location ─
@@ -974,7 +970,7 @@ intermediate.totalCosts        += intCapex;
 
 // ─── 9. Position EndOfLife on GIS map ────────────────────────────────────────
 // CE3.0 Phase 2: EndOfLife agent eliminated — landfill function absorbed by Intermediate.
-// landfill.jumpTo(endOfLifeLat, endOfLifeLon); // superseded
+landfill.jumpTo(endOfLifeLat, endOfLifeLon);  // CE3.0 fix: position EndOfLife at BIWASE
 
 // ─── 10. Network-level CAPEX ─────────────────────────────────────────────────
 totalCapex = intCapex;
@@ -2668,7 +2664,7 @@ if (currentYear >= 10) {
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<Z>0</Z>
-					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
 
 			<Presentation>
 				<EmbeddedObjectPresentation>
@@ -5158,7 +5154,7 @@ else return black;]]></Body>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<Z>0</Z>
-					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
 
 			<Presentation>
     			<TimePlot>
@@ -7458,7 +7454,7 @@ else return black;]]></Body>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<Z>0</Z>
-					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
 
 			<Presentation>
     			<TimePlot>
@@ -8489,7 +8485,7 @@ else return black;]]></Body>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<Z>0</Z>
-					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
 
 			<Presentation>
 				<Group>
@@ -9059,7 +9055,7 @@ else return black;]]></Body>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<Z>0</Z>
-					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
 
 			<Presentation>
 				<Group>
@@ -12101,7 +12097,7 @@ send("CombustionFinished", this);]]></Code>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<Z>0</Z>
-					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
 
 			<Presentation>
 				<Group>
@@ -13470,7 +13466,7 @@ traceln(String.format("[TRUCK%d-LOADED] t=%.2fd | jolly arrived at %s | payload=
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
 					<Z>0</Z>
-					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
 
 			<Presentation>
 				<Oval>
