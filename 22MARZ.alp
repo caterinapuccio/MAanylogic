@@ -10664,7 +10664,42 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
     return true;
 }
 
-(truck == null) {
+// Check Tier 2: shared flexible pool
+double tier2Free = tier2SharedCapacity - tier2UsedCapacity;
+double neededFromTier2 = qty - tier1Free;
+
+if (neededFromTier2 <= tier2Free) {
+    // ── ACCEPTED: split between Tier 1 and Tier 2 ───────────────────────────────────────
+    recyclingStoragePerMat[matIdx] += qty;
+    tier2UsedCapacity += neededFromTier2;
+    totalBookingsAccepted[matIdx]++;
+    double tCost = main.transportCostCalc(qty, distKm);
+double gwpCollection = main.transportGWPCalc(qty, distKm);
+    this.totalCosts            += tCost;
+    this.financialBalance      -= tCost;
+    main.networkTotalTransportCostISProcesses += tCost;
+    main.totalTransportCost    += tCost;
+    main.transportGWPISProcesses += gwpCollection;
+    main.totalTransportGWP     += gwpCollection;
+        bookingLog.add(new Object[]{
+        time(),
+        prov.getIndex(),
+        mat.toString(),
+        qty,
+        "ACCEPTED",
+        String.format("Tier1+%.2ft_Tier2", neededFromTier2),
+        distKm,
+        tCost
+    });
+    // CE3.0 Phase 3: dispatch — dedicated truck first, fall back to jolly pool
+    {
+        GarbageTruck truck = null;
+        int pIdx = prov.getIndex();
+        if (pIdx >= 0 && pIdx < main.garbageTrucks.size()) {
+            GarbageTruck dedicated = main.garbageTrucks.get(pIdx);
+            if (!dedicated.busy) truck = dedicated;
+        }
+        if (truck == null) {
             for (GarbageTruck t : main.garbageTrucks) {
                 if (t.isJolly && !t.busy) { truck = t; break; }
             }
