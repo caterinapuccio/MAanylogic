@@ -12141,6 +12141,24 @@ if (main.debugMode || truckIndex == 0) {
                             : (isReturning ? "jolly-return→BIWASE[loaded]" : "jolly-outbound→provider[empty]");
     traceln(String.format("[TRUCK %d] TRANSIT-ENTRY t=%.2fd | %s | payload=%.3ft",
         truckIndex, time(DAY), leg, lastPayloadTonnes));
+}
+// ── Detailed loaded-leg diagnostics for truck0 (dedicated, first leg only) ──
+if (truckIndex == 0 && !isJolly && sourceProvider != null) {
+    Provider _sp0 = (Provider) sourceProvider;
+    double _distKm   = main.haversineKm(_sp0.providerLat, _sp0.providerLon,
+                                         main.intermediateLat, main.intermediateLon);
+    double _speedMs  = getSpeed();           // AnyLogic internal speed in m/s
+    double _speedKmH = _speedMs * 3.6;
+    double _travelH  = (_speedMs > 0) ? (_distKm * 1000.0 / _speedMs) / 3600.0 : -1;
+    double _travelD  = _travelH / 24.0;
+    traceln(String.format(
+        "[TRUCK0-LOADED-LEG] t=%.4fd | FROM %s (%.5f°N %.5f°E) TO BIWASE (%.5f°N %.5f°E)" +
+        " | dist=%.3fkm | speed=%.4fm/s (%.2fkm/h) | est.travel=%.6fd (%.2fh) | payload=%.4ft",
+        time(DAY),
+        _sp0.companyName, _sp0.providerLat, _sp0.providerLon,
+        main.intermediateLat, main.intermediateLon,
+        _distKm, _speedMs, _speedKmH, _travelD, _travelH,
+        lastPayloadTonnes));
 }]]></EntryAction>
 						<FillColor/>
 					</Properties>
@@ -12258,11 +12276,11 @@ traceln(String.format("[TRUCK%d-LOADED] t=%.2fd | jolly arrived at %s | payload=
 					<IconOffset>140.0</IconOffset>
 					<Properties Source="9990000000012" Target="9990000000011" Trigger="arrival">
 						<Action><![CDATA[if (truckIndex == 0 || (isJolly && isReturning)) {
-    traceln(String.format("[TRUCK%d-ARRIVED@BIWASE] t=%.2fd | payload=%.3ft | %s → home",
+    traceln(String.format("[TRUCK%d-ARRIVED@BIWASE] t=%.4fd | payload=%.4ft | travel=%.6fd (%.3fh) | %s → home",
         truckIndex, time(DAY), lastPayloadTonnes,
+        time(DAY) - lastPickupTime, (time(DAY) - lastPickupTime) * 24.0,
         isJolly ? "jolly-complete" : "dedicated-complete"));
-}
-]]></Action>
+}]]></Action>
 							<Timeout Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
