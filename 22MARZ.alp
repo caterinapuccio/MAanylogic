@@ -10741,15 +10741,16 @@ moveTo(intermediateLat, intermediateLon);
 					<Parameters>
 						<Parameter>
 							<Name><![CDATA[arrivalType]]></Name>
-							<Value Class="CodeValue">
-								<Code><![CDATA[Source.ArrivalType.CALL_INJECT_FUNCTION]]></Code>
-							</Value>
 						</Parameter>
 						<Parameter>
 							<Name><![CDATA[rate]]></Name>
 						</Parameter>
 						<Parameter>
 							<Name><![CDATA[interarrivalTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[36500]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+							</Value>
 						</Parameter>
 						<Parameter>
 							<Name><![CDATA[firstArrivalMode]]></Name>
@@ -11829,8 +11830,8 @@ return false;]]></Body>
 WasteToBeBurned      += qty;
 totalWasteReceived   += qty;
 traceln(String.format(
-    "[LANDFILL-RECEIVE] t=%.2fd | +%.3ft → WasteToBeBurned=%.3ft (threshold=%.1ft isBurning=%b)",
-    time(DAY), qty, WasteToBeBurned, burningThreshold_t, isBurning));
+    "[LANDFILL-RECEIVE] t=%.2fd | +%.3ft -> WasteToBeBurned=%.3ft (threshold=%.1ft)",
+    time(DAY), qty, WasteToBeBurned, burningThreshold_t));
 ]]></Body>
 				</Function>
 			</Functions>
