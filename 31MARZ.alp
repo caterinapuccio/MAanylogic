@@ -10159,11 +10159,6 @@ traceln(String.format(
 						<ClassName><![CDATA[Intermediate]]></ClassName>
 						<ItemName><![CDATA[statechart]]></ItemName>
 					</StatechartReference>
-					<StatechartReference>
-						<PackageName><![CDATA[ma1]]></PackageName>
-						<ClassName><![CDATA[Intermediate]]></ClassName>
-						<ItemName><![CDATA[Initiatetransport]]></ItemName>
-					</StatechartReference>
 					<LineStyle>SOLID</LineStyle>
 					<LineWidth>1</LineWidth>
 					<LineColor>-16777216</LineColor>
