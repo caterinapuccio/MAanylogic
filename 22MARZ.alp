@@ -12588,6 +12588,43 @@ if (isJolly) {
 					</Properties>
 				</Variable>
 			</Variables>
+			<Events>
+				<Event>
+					<Id>9990001000001</Id>
+					<Name><![CDATA[pollTimer]]></Name>
+					<Description><![CDATA[CE3.0 dispatch heartbeat: fires every 6 sim-hours in GarbageTruck's own event context. Sole purpose: give AnyLogic a reason to re-evaluate condition-triggered transitions for this agent — specifically t_dispatch (condition: dispatchPending). Without this, an idle truck has no internal events and AnyLogic never checks dispatchPending after external code sets it (from Intermediate.acceptBooking or Provider retry/NonIS events). Action is intentionally empty; the condition re-evaluation is automatic after any agent event.]]></Description>
+					<X>60</X><Y>1050</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties TriggerType="timeout" Mode="cyclic">
+						<Timeout Class="CodeUnitValue">
+							<Code><![CDATA[0.25]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</Timeout>
+						<Rate Class="CodeUnitValue">
+							<Code><![CDATA[1]]></Code>
+							<Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit>
+						</Rate>
+						<Id>9990001000002</Id>
+						<OccurrenceAtTime>false</OccurrenceAtTime>
+						<OccurrenceDate>1772092800000</OccurrenceDate>
+						<OccurrenceTime Class="CodeUnitValue">
+							<Code><![CDATA[0.0]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</OccurrenceTime>
+						<RecurrenceCode Class="CodeUnitValue">
+							<Code><![CDATA[0.25]]></Code>
+							<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+						</RecurrenceCode>
+						<Condition><![CDATA[true]]></Condition>
+					</Properties>
+					<Action><![CDATA[// CE3.0: intentionally empty — this event exists solely to give GarbageTruck a periodic
+// internal event so AnyLogic re-evaluates the t_dispatch condition (dispatchPending).
+// Fires every 6 sim-hours; max dispatch latency = 6h vs 168h weekly waste cycle (~3.6%).]]></Action>
+				</Event>
+			</Events>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
 					<Id>9990000000011</Id>
