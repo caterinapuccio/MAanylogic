@@ -4592,7 +4592,7 @@ if (pendingWaste > 0 && !isTransporting) {
         isTransporting       = true;
         pendingWaste         = 0.0;
         isTruckWaiting       = false;
-        truck.send("Go");
+        truck.dispatchPending = true;
         if (getIndex() == 0) {
             traceln(String.format("[PROV0-PENDING-DISPATCH] t=%.2fd | dispatched=%.3ft %s → truck%d",
                 time(DAY), rawWaste, myMaterial, truck.truckIndex));
@@ -4836,7 +4836,7 @@ if (rawWaste > 0 && !isTransporting) {
         truck.sourceProvider   = this;
         truck.isLandfillRun    = true;   // flag: deliver to landfill buffer, not recycling
         isTransporting         = true;
-        truck.send("Go");
+        truck.dispatchPending = true;
         if (getIndex() == 0 || truck.truckIndex == 0) {
             traceln(String.format(
                 "[DISPATCH-NonIS] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s → landfill",
@@ -10621,7 +10621,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.targetLon = prov.providerLon;
             truck.sourceProvider = prov;
             prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
-            truck.send("Go");
+            truck.dispatchPending = true;
             if (prov.getIndex() == 0 || truck.truckIndex == 0) {
                 traceln(String.format("[DISPATCH-T1] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s",
                     time(DAY), prov.getIndex(), prov.companyName, truck.truckIndex, truck.isJolly, qty, mat));
@@ -10684,7 +10684,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.targetLon = prov.providerLon;
             truck.sourceProvider = prov;
             prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
-            truck.send("Go");
+            truck.dispatchPending = true;
             if (prov.getIndex() == 0 || truck.truckIndex == 0) {
                 traceln(String.format("[DISPATCH-T2] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s",
                     time(DAY), prov.getIndex(), prov.companyName, truck.truckIndex, truck.isJolly, qty, mat));
@@ -12571,6 +12571,22 @@ if (isJolly) {
 						</InitialValue>
 					</Properties>
 				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9990000000099</Id>
+					<Name><![CDATA[dispatchPending]]></Name>
+					<Description><![CDATA[CE3.0 dispatch trigger: set to true by Intermediate.acceptBooking or Provider.truckRetryEvent/NonIS_Disposal to trigger the home→transit transition. Cleared by t_dispatch on entry to transit. Replaces the send("Go", truck) message mechanism which fails silently without AgentLink.]]></Description>
+					<X>50</X><Y>940</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[boolean]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[false]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 			</Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -12740,10 +12756,11 @@ if (truckIndex == 0 && !isJolly && sourceProvider != null) {
 						<Point><X>0</X><Y>70</Y></Point>
 					</Points>
 					<IconOffset>20.0</IconOffset>
-					<Properties Source="9990000000011" Target="9990000000012" Trigger="message">
-						<Action><![CDATA[isReturning = false;
+					<Properties Source="9990000000011" Target="9990000000012" Trigger="condition">
+						<Action><![CDATA[dispatchPending = false;  // CE3.0: clear trigger immediately; set externally by acceptBooking/truckRetryEvent/NonIS_Disposal
+isReturning = false;
 if (truckIndex == 0) {
-    traceln(String.format("[TRUCK0-DISPATCH] t=%.2fd | 'Go' received | provider=%s | rawWaste=%.3ft",
+    traceln(String.format("[TRUCK0-DISPATCH] t=%.2fd | condition fired | provider=%s | rawWaste=%.3ft",
         time(DAY),
         (sourceProvider != null ? ((Provider)sourceProvider).companyName : "null"),
         (sourceProvider != null ? ((Provider)sourceProvider).rawWaste : 0.0)));
@@ -12753,7 +12770,7 @@ if (truckIndex == 0) {
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
 						</Timeout>
-						<Condition><![CDATA[true]]></Condition>
+						<Condition><![CDATA[dispatchPending]]></Condition>
 						<Rate Class="CodeUnitValue">
 							<Code><![CDATA[1]]></Code>
 							<Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit>
