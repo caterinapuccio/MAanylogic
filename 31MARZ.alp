@@ -4590,7 +4590,23 @@ MaterialType.PLASTIC_SCRAP]]></Code>
 						</ParameterEditor>
 					</Properties>                 
 				</Variable>
-			</Variables>
+							<Variable Class="PlainVariable">
+					<Id>9971000000001</Id>
+					<Name><![CDATA[myActivityLog]]></Name>
+					<Description><![CDATA[In-simulation activity log: generation + IS/landfill dispatch events. Last 20 shown in agent view.]]></Description>
+					<X>820</X><Y>1890</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[java.util.ArrayList]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[new java.util.ArrayList<String>()]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+</Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
 					<Id>9001000000001</Id>
@@ -4620,6 +4636,8 @@ rawWaste     = Math.max(avgSupplyFromExcel * 0.01,
 // (companies always generate some waste; zero-weeks would skip IS dispatch entirely).
 currentSupply = rawWaste;
 bookingAccepted = false;
+myActivityLog.add(String.format("Day%7.1f | GENERATED  | %.3f t %s",
+    time(DAY), rawWaste, myMaterial));
 // IS scenario: attempt booking with Intermediate (synchronous)
 if (getIndex() == 0) {
     traceln(String.format("[PROV0-GEN] t=%.2fd | rawWaste=%.3ft %s | useIS=%b",
@@ -4726,6 +4744,8 @@ main.totalExchanged += rawWaste;  // track total IS-exchanged material [tonnes]
 // ── Provider-side dispatch tracking ─────────────────────────────────────────
 truckDispatches++;
 totalMassDispatched += rawWaste;
+myActivityLog.add(String.format("Day%7.1f | IS-SENT    | %.3f t %s -> BIWASE",
+    time(DAY), rawWaste, myMaterial));
 if (main.debugMode) {
     traceln(String.format("[CE3] Provider %d (%s): IS dispatch #%d | %.3ft %s | cumulative: %.3ft",
         getIndex(), companyName, truckDispatches, rawWaste, myMaterial, totalMassDispatched));
@@ -4772,6 +4792,8 @@ if (getIndex() == 0) {
 // LCA accounting for the transport leg is recorded here (provider-side);
 // incineration emissions are recorded in Intermediate.combustionSlagEvent.
 int matIdx = main.matIndex(myMaterial);
+myActivityLog.add(String.format("Day%7.1f | NON-IS     | %.3f t %s -> landfill buffer",
+    time(DAY), rawWaste, myMaterial));
 double distEoL = main.haversineKm(providerLat, providerLon,
                                    main.intermediateLat, main.intermediateLon);
 
@@ -7333,7 +7355,7 @@ MaterialType.values()[getIndex() % 5]]]></Code>
 					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
 						<Type><![CDATA[java.util.ArrayList]]></Type>
 						<InitialValue Class="CodeValue">
-							<Code><![CDATA[new java.util.ArrayList&lt;String&gt;()]]></Code>
+							<Code><![CDATA[new java.util.ArrayList<String>()]]></Code>
 						</InitialValue>
 					</Properties>
 				</Variable>
@@ -8474,7 +8496,7 @@ else return black;]]></Body>
 					<Rotation>0.0</Rotation>
 					<Color>-2313728</Color>
 					<Text><![CDATA[=== RECEIVER LOG ===]]></Text>
-					<TextCode><![CDATA["=== RECEIVER #" + getIndex() + ": " + companyName + " | " + myMaterial + " ===\n"
+					<TextCode><![CDATA["=== RECEIVER #" + getIndex() + " | " + myMaterial + " ===\n"
 + (myActivityLog.isEmpty() ? "(no events yet)" : String.join("\n",
     (java.util.List<String>) myActivityLog.subList(Math.max(0, myActivityLog.size()-20), myActivityLog.size())))]]></TextCode>
 					<Font>
