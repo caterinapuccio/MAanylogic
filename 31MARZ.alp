@@ -7501,15 +7501,7 @@ if (deliveredQty > 0) {
             double disposalFee = residueQty * main.costLandfillPerMat[matIdx];
             this.totalCosts       += disposalFee;
             this.financialBalance -= disposalFee;
-            double distToEoL = main.haversineKm(main.intermediateLat, main.intermediateLon,
-                                                 main.intermediateLat, main.intermediateLon);
-            double eoLtCost = main.transportCostCalc(residueQty, distToEoL);
-            double eoLtGWP  = main.transportGWPCalc(residueQty, distToEoL);
-            this.totalCosts              += eoLtCost;
-            this.financialBalance        -= eoLtCost;
-            this.GWPFromResidueTransport += eoLtGWP;
-            main.networkTotalTransportCostISProcesses += eoLtCost;
-            main.transportGWPISProcesses  += eoLtGWP;
+            // EoL facility is co-located with BIWASE (dist = 0) — no additional transport cost or GWP.
             main.intermediate.totalWasteReceived += residueQty;
             main.landfillCostPerMat[matIdx] += disposalFee;
             this.totalResidueToEoL += residueQty;
@@ -10549,16 +10541,7 @@ for (int m = 0; m < nMat; m++) {
         this.totalCosts += pwCost;
         main.landfillCostPerMat[m] += pwCost;
 
-        // Transport to EndOfLife
-        double distEoL = main.haversineKm(this.intermediateLat, this.intermediateLon, main.intermediateLat, main.intermediateLon);
-        double GWPISTransportToIntermediate = main.transportGWPCalc(processWaste, distEoL);
-        double tCost = main.transportCostCalc(processWaste, distEoL);
-        main.transportGWPISProcesses  += GWPISTransportToIntermediate;
-        main.networkTotalTransportCostISProcesses += tCost;
-        main.totalTransportGWP += GWPISTransportToIntermediate;
-        main.totalTransportCost += tCost;
-        this.totalCosts += tCost;
-        this.financialBalance -= tCost;
+        // Transport: EoL facility is co-located with BIWASE (dist = 0) — no transport cost or GWP.
     }
 
     // ── LCA tracking: recycling process impact ──────────────────────────
