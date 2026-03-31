@@ -12272,7 +12272,7 @@ myProviderIndex = isJolly ? -1 : truckIndex;
 // All trucks start at BIWASE; Main startup will reposition dedicated trucks after providers are initialized
 jumpTo(main.intermediateLat, main.intermediateLon);
 // truckMarker circle stays visible on GIS; lorry icon only shows during transit
-lorry.setVisible(false);
+// DEBUG: lorry.setVisible(false); // commented out — keeping lorry always visible for GIS visibility test
 if (isJolly) {
     truckMarker.setFillColor(new java.awt.Color(255, 140, 0)); // orange = jolly
 } else {
@@ -12642,7 +12642,7 @@ if (isJolly) {
 					<ShowLabel>true</ShowLabel>
 					<Properties Width="100" Height="30">
 						<EntryAction><![CDATA[busy = false;
-lorry.setVisible(false);
+// DEBUG: lorry.setVisible(false); // commented out — keeping lorry always visible for GIS visibility test
 isReturning = false;
 
 // ── 1. Capture provider info BEFORE clearing sourceProvider ──────────────
@@ -12672,8 +12672,14 @@ if (sourceProvider != null) {
 // Guard: at t=0 providerLat/Lon are 0 (StartupCode not yet run). Skip moveTo
 // to avoid truck moving toward the ocean; StartupCode section 6b calls jumpTo().
 if (time() > 0 && !isJolly && myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
-    Provider home_p = (Provider) main.providers.get(myProviderIndex);
-    moveTo(home_p.providerLat, home_p.providerLon);
+    if (truckIndex == 0) {
+        // DEBUG: hardcoded scalar coords for truck0 GIS visibility test
+        // To revert: delete this if-block and uncomment the two lines below
+        moveTo(10.93169, 106.71506); // prov0 lat/lon; was: moveTo(home_p.providerLat, home_p.providerLon)
+    } else {
+        Provider home_p = (Provider) main.providers.get(myProviderIndex);
+        moveTo(home_p.providerLat, home_p.providerLon);
+    }
 }
 
 // ── 3b. Landfill run: notify Intermediate of waste delivery ─────────────
@@ -12731,7 +12737,13 @@ lorry.setVisible(true);
 //   jolly outbound   : BIWASE → provider (empty, isReturning=false)
 //   jolly return leg : provider → BIWASE (loaded, isReturning=true)
 if (!isJolly) {
-    moveTo(main.intermediateLat, main.intermediateLon);  // dedicated: loaded to BIWASE
+    if (truckIndex == 0) {
+        // DEBUG: hardcoded scalar coords for truck0 GIS visibility test
+        // To revert: delete this if-block and restore the moveTo line below
+        moveTo(10.93000, 106.72000); // BIWASE lat/lon; was: moveTo(main.intermediateLat, main.intermediateLon)
+    } else {
+        moveTo(main.intermediateLat, main.intermediateLon);  // dedicated: loaded to BIWASE
+    }
 } else if (!isReturning) {
     moveTo(targetLat, targetLon);                        // jolly outbound: to provider
 } else {
