@@ -12749,7 +12749,7 @@ if (truckIndex == 0 && !isJolly && sourceProvider != null) {
     Provider _sp0 = (Provider) sourceProvider;
     double _distKm   = main.haversineKm(_sp0.providerLat, _sp0.providerLon,
                                          main.intermediateLat, main.intermediateLon);
-    double _speedMs  = getSpeed();           // AnyLogic internal speed in m/s
+    double _speedMs  = 10.0;                 // VelocityCode=10 MPS; getSpeed() crashes without CarExtension
     double _speedKmH = _speedMs * 3.6;
     double _travelH  = (_speedMs > 0) ? (_distKm * 1000.0 / _speedMs) / 3600.0 : -1;
     double _travelD  = _travelH / 24.0;
