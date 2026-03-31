@@ -6110,7 +6110,7 @@ else return black;]]></Body>
 				        <EmbeddedIcon>false</EmbeddedIcon>
 						<TextColor>-16777216</TextColor>
 						<Enabled>true</Enabled>
-						<ActionCode><![CDATA[getExperimentHost().navigateTo(main);]]></ActionCode>
+						<ActionCode><![CDATA[((Main)getOwner())._origin_VA.navigateTo();]]></ActionCode>
 					</BasicProperties>
 					<ExtendedProperties>
 						<Font Name="Dialog" Size="14" Style="1"/>
@@ -8018,7 +8018,7 @@ else return black;]]></Body>
 				        <EmbeddedIcon>false</EmbeddedIcon>
 						<TextColor>-16777216</TextColor>
 						<Enabled>true</Enabled>
-						<ActionCode><![CDATA[getExperimentHost().navigateTo(main);]]></ActionCode>
+						<ActionCode><![CDATA[((Main)getOwner())._origin_VA.navigateTo();]]></ActionCode>
 					</BasicProperties>
 					<ExtendedProperties>
 						<Font Name="Dialog" Size="14" Style="1"/>
@@ -11604,7 +11604,7 @@ send("CombustionFinished", this);]]></Code>
                         <EmbeddedIcon>false</EmbeddedIcon>	
 						<TextColor>-16777216</TextColor>
 						<Enabled>true</Enabled>
-						<ActionCode><![CDATA[getExperimentHost().navigateTo(main);]]></ActionCode>
+						<ActionCode><![CDATA[((Main)getOwner())._origin_VA.navigateTo();]]></ActionCode>
 					</BasicProperties>
 					<ExtendedProperties>
 						<Font Name="Dialog" Size="14" Style="1"/>
@@ -11629,11 +11629,12 @@ myProviderIndex = isJolly ? -1 : truckIndex;
 jumpTo(main.intermediateLat, main.intermediateLon);
 // truckMarker circle stays visible on GIS; lorry icon only shows during transit
 // DEBUG: lorry.setVisible(false); // commented out — keeping lorry always visible for GIS visibility test
-if (isJolly) {
-    truckMarker.setFillColor(new java.awt.Color(255, 140, 0)); // orange = jolly
-} else {
-    truckMarker.setFillColor(new java.awt.Color(30, 100, 220)); // blue = dedicated
-}]]></StartupCode>
+// CE3.0: truckMarker oval shape not yet added to presentation — commented out until shape exists
+// if (isJolly) {
+//     truckMarker.setFillColor(new java.awt.Color(255, 140, 0)); // orange = jolly
+// } else {
+//     truckMarker.setFillColor(new java.awt.Color(30, 100, 220)); // blue = dedicated
+// }]]></StartupCode>
 			<Generic>false</Generic>
 			<GenericParameter>
 				<Id>1773637505384</Id>
@@ -12664,7 +12665,7 @@ traceln(String.format("[TRUCK%d-LOADED] t=%.2fd | jolly arrived at %s | payload=
 				        <EmbeddedIcon>false</EmbeddedIcon>
 						<TextColor>-16777216</TextColor>
 						<Enabled>true</Enabled>
-						<ActionCode><![CDATA[getExperimentHost().navigateTo(main);]]></ActionCode>
+						<ActionCode><![CDATA[((Main)getOwner())._origin_VA.navigateTo();]]></ActionCode>
 					</BasicProperties>
 					<ExtendedProperties>
 						<Font Name="Dialog" Size="14" Style="1"/>
