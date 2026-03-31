@@ -11482,6 +11482,10 @@ double cycleMass_t = WasteToBeBurned;
 double cycleMass_kg = cycleMass_t * 1000.0;
 WasteBurned += cycleMass_t;
 WasteToBeBurned = 0.0;
+// CE3.0 fix: apply emission factors (kg pollutant / kg waste) — lines were missing
+totalCO2EmittedKg += cycleMass_kg * emissionFactor_CO2_kgPerKg;
+totalCOEmittedKg  += cycleMass_kg * emissionFactor_CO_kgPerKg;
+totalNOxEmittedKg += cycleMass_kg * emissionFactor_NOx_kgPerKg;
 traceln(String.format("[COMBUSTION-COMPLETE] t=%.1f | cycle=%.2f t | total_burned=%.2f t | cumCO2=%.2f kg | cumCO=%.4f kg | cumNOx=%.4f kg",
     time(), cycleMass_t, WasteBurned, totalCO2EmittedKg, totalCOEmittedKg, totalNOxEmittedKg));
 send("CombustionFinished", this);]]></Code>
