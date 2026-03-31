@@ -698,14 +698,14 @@ public void exportValidationReport() {
             tlR.createCell(5).setCellValue((String)entry[5]);
             org.apache.poi.xssf.usermodel.XSSFCell tlP = tlR.createCell(6);
             tlP.setCellValue(((Number)entry[6]).doubleValue());
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ns6 = wb.createCellStyle(); ns6.cloneStyleFrom(numStyle); tlP.setCellStyle(ns6);
+            tlP.setCellStyle(numStyle);  // CE3.0: reuse pre-created style (was: per-row cloneStyleFrom → hit POI 64k style limit)
             tlR.createCell(7).setCellValue(((Number)entry[7]).intValue());
             org.apache.poi.xssf.usermodel.XSSFCell tlCm = tlR.createCell(8);
             tlCm.setCellValue(((Number)entry[8]).doubleValue());
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ns8 = wb.createCellStyle(); ns8.cloneStyleFrom(numStyle); tlCm.setCellStyle(ns8);
+            tlCm.setCellStyle(numStyle); // CE3.0: reuse pre-created style
             org.apache.poi.xssf.usermodel.XSSFCell tlTt = tlR.createCell(9);
             tlTt.setCellValue(((Number)entry[9]).doubleValue());
-            org.apache.poi.xssf.usermodel.XSSFCellStyle ns9 = wb.createCellStyle(); ns9.cloneStyleFrom(numStyle); tlTt.setCellStyle(ns9);
+            tlTt.setCellStyle(numStyle); // CE3.0: reuse pre-created style
         }
         tripLogSheet.createFreezePane(0, 1);
 
