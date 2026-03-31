@@ -4592,7 +4592,7 @@ if (pendingWaste > 0 && !isTransporting) {
         isTransporting       = true;
         pendingWaste         = 0.0;
         isTruckWaiting       = false;
-        send("Go", truck);
+        truck.send("Go");
         if (getIndex() == 0) {
             traceln(String.format("[PROV0-PENDING-DISPATCH] t=%.2fd | dispatched=%.3ft %s → truck%d",
                 time(DAY), rawWaste, myMaterial, truck.truckIndex));
@@ -4836,7 +4836,7 @@ if (rawWaste > 0 && !isTransporting) {
         truck.sourceProvider   = this;
         truck.isLandfillRun    = true;   // flag: deliver to landfill buffer, not recycling
         isTransporting         = true;
-        send("Go", truck);
+        truck.send("Go");
         if (getIndex() == 0 || truck.truckIndex == 0) {
             traceln(String.format(
                 "[DISPATCH-NonIS] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s → landfill",
@@ -10621,7 +10621,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.targetLon = prov.providerLon;
             truck.sourceProvider = prov;
             prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
-            send("Go", truck);
+            truck.send("Go");
             if (prov.getIndex() == 0 || truck.truckIndex == 0) {
                 traceln(String.format("[DISPATCH-T1] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s",
                     time(DAY), prov.getIndex(), prov.companyName, truck.truckIndex, truck.isJolly, qty, mat));
@@ -10684,7 +10684,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
             truck.targetLon = prov.providerLon;
             truck.sourceProvider = prov;
             prov.isTransporting = true;  // CE3.0 Phase 3: guard against double-booking
-            send("Go", truck);
+            truck.send("Go");
             if (prov.getIndex() == 0 || truck.truckIndex == 0) {
                 traceln(String.format("[DISPATCH-T2] t=%.2fd | prov%d(%s) → truck%d(jolly=%b) | %.3ft %s",
                     time(DAY), prov.getIndex(), prov.companyName, truck.truckIndex, truck.isJolly, qty, mat));
