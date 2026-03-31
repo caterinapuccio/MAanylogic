@@ -12620,7 +12620,7 @@ send("CombustionFinished", this);]]></Code>
 						<LabelText><![CDATA[→ Main]]></LabelText>
 					</ExtendedProperties>
 				</Control>
-			</Presentation>
+
 
 
 					<Text>
@@ -12712,6 +12712,40 @@ send("CombustionFinished", this);]]></Code>
     (java.util.List<String>) residueLog.subList(
         Math.max(0, residueLog.size()-15), residueLog.size())))]]></TextCode>
 					</Text>
+					<Text>
+						<Id>9986000010</Id>
+						<Name><![CDATA[desStateDisplay]]></Name>
+						<X>-500</X><Y>560</Y>
+						<Label><X>10</X><Y>0</Y></Label>
+						<PublicFlag>false</PublicFlag>
+						<PresentationFlag>true</PresentationFlag>
+						<ShowLabel>false</ShowLabel>
+						<DrawMode>SHAPE_DRAW_2D</DrawMode>
+						<EmbeddedIcon>false</EmbeddedIcon>
+						<Z>0</Z>
+						<Rotation>0.0</Rotation>
+						<FontSize>10</FontSize>
+						<Bold>false</Bold>
+						<Italic>false</Italic>
+						<Alignment>LEFT</Alignment>
+						<Color>-16744448</Color>
+						<TextCode><![CDATA["=== RECYCLING DES  (polymer: shred→wash→sep→extrude) ===\n"
++ String.format(" Shredding   : %s\n",
+    recyclShredding.size()>0   ? "▶ ACTIVE ("+recyclShredding.size()+" batch)" : "  idle")
++ String.format(" Washing     : %s\n",
+    recyclWashing.size()>0     ? "▶ ACTIVE ("+recyclWashing.size()+" batch)"   : "  idle")
++ String.format(" Separation  : %s\n",
+    recyclSeparation.size()>0  ? "▶ ACTIVE ("+recyclSeparation.size()+" batch)": "  idle")
++ String.format(" Extrusion   : %s\n",
+    recyclExtrusion.size()>0   ? "▶ ACTIVE ("+recyclExtrusion.size()+" batch)" : "  idle")
++ "=== PROCESS WASTE DES  (residual → on-site landfill) ===\n"
++ String.format(" PW Transport: %s\n",
+    pwTransport.size()>0       ? "▶ ACTIVE ("+pwTransport.size()+" batch)"     : "  idle")
++ String.format(" PW Landfill : %s\n",
+    pwLandfillDeposit.size()>0 ? "▶ ACTIVE ("+pwLandfillDeposit.size()+" batch)": "  idle")
++ String.format("  Pending PW qty: %.3f t", pw_pendingQty)]]></TextCode>
+					</Text>
+			</Presentation>
 				</Level>
 			</Presentation>
 
