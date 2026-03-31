@@ -849,7 +849,7 @@ intermediateLon = Input_data.getCellNumericValue("Companies_Listing", 73, 6);
 // R2=headers, R3=values. Old per-AgentType rows (providerTruckCount/intermTruckCount) removed.
 // Per-provider truckCount now read from Companies_Listing col I (index 9) per row.
 // JollyTruckCount (col I = index 9) assigned to intermediate.truckCount.
-double truckVelocity_kmh             = Input_data.getCellNumericValue("TruckFleet", 3, 1);
+truckVelocity_kmh                    = Input_data.getCellNumericValue("TruckFleet", 3, 1);
 double loadingTime_h                 = Input_data.getCellNumericValue("TruckFleet", 3, 2);
 double unloadingTime_h               = Input_data.getCellNumericValue("TruckFleet", 3, 3);
 double truckCapPLASTIC_t             = Input_data.getCellNumericValue("TruckFleet", 3, 4);
@@ -1497,6 +1497,22 @@ validateExcelConnections();
 						<Type><![CDATA[double]]></Type>
 						<InitialValue Class="CodeValue">
 							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9981000000003</Id>
+					<Name><![CDATA[truckVelocity_kmh]]></Name>
+					<Description><![CDATA[Truck travel speed (km/h) from TruckFleet A3. Used by GarbageTruck.setSpeed().]]></Description>
+					<X>1600</X><Y>280</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[60.0]]></Code>
 						</InitialValue>
 					</Properties>
 				</Variable>
@@ -6695,7 +6711,31 @@ else return black;]]></Body>
 			</Presentation>
 
 				</Group>
-			</Presentation>
+							<Text>
+					<Id>9971000000010</Id>
+					<Name><![CDATA[activityLogDisplay]]></Name>
+					<X>-400</X><Y>40</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-13421773</Color>
+					<Text><![CDATA[=== PROVIDER LOG ===]]></Text>
+					<TextCode><![CDATA["=== PROVIDER #" + getIndex() + ": " + companyName + " | " + myMaterial + " ===\n"
++ (myActivityLog.isEmpty() ? "(no events yet)" : String.join("\n",
+    (java.util.List<String>) myActivityLog.subList(Math.max(0, myActivityLog.size()-20), myActivityLog.size())))]]></TextCode>
+					<Font>
+						<Name>Monospaced</Name>
+						<Size>11</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
+</Presentation>
 
 				</Level>
 			</Presentation>
@@ -7281,7 +7321,23 @@ MaterialType.values()[getIndex() % 5]]]></Code>
 						</ParameterEditor>
 					</Properties>                 
 				</Variable>
-			</Variables>
+							<Variable Class="PlainVariable">
+					<Id>9972000000001</Id>
+					<Name><![CDATA[myActivityLog]]></Name>
+					<Description><![CDATA[In-simulation activity log: demand, IS receipt, virgin purchase events. Last 20 shown in agent view.]]></Description>
+					<X>640</X><Y>810</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[java.util.ArrayList]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[new java.util.ArrayList&lt;String&gt;()]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+</Variables>
 			<Events>
 				<Event>
 					<Id>1772012193176</Id>
@@ -7442,6 +7498,9 @@ if (deliveredQty > 0) {
     }
 }
 
+// Activity log: weekly demand cycle summary
+myActivityLog.add(String.format("Day%7.1f | DEM=%.3ft | IS=%.3ft | VIRGIN=%.3ft | %s",
+    time(DAY), this.currentDemand, deliveredQty, unmetDemand, myMaterial));
 // ── STEP 5: Draw next period's demand ────────────────────────────────────
 // Demand drawn from per-receiver Excel value (col G) with normal distribution
 // coefficient of variation = demandVariability (col H, default 0.20 = 20%)
@@ -8401,7 +8460,31 @@ else return black;]]></Body>
 			</Presentation>
 
 				</Group>
-			</Presentation>
+							<Text>
+					<Id>9972000000010</Id>
+					<Name><![CDATA[activityLogDisplay]]></Name>
+					<X>-400</X><Y>40</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-2313728</Color>
+					<Text><![CDATA[=== RECEIVER LOG ===]]></Text>
+					<TextCode><![CDATA["=== RECEIVER #" + getIndex() + ": " + companyName + " | " + myMaterial + " ===\n"
++ (myActivityLog.isEmpty() ? "(no events yet)" : String.join("\n",
+    (java.util.List<String>) myActivityLog.subList(Math.max(0, myActivityLog.size()-20), myActivityLog.size())))]]></TextCode>
+					<Font>
+						<Name>Monospaced</Name>
+						<Size>11</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
+</Presentation>
 
 				</Level>
 			</Presentation>
@@ -11904,6 +11987,7 @@ if (sourceProvider != null) {
 // Guard: at t=0 providerLat/Lon are 0 (StartupCode not yet run). Skip moveTo
 // to avoid truck moving toward the ocean; StartupCode section 6b calls jumpTo().
 if (time() > 0 && !isJolly && myProviderIndex >= 0 && myProviderIndex < main.providers.size()) {
+    setSpeed(main.truckVelocity_kmh / 3.6);
     if (truckIndex == 0) {
         // DEBUG: hardcoded scalar coords for truck0 GIS visibility test
         // To revert: delete this if-block and uncomment the two lines below
@@ -11973,6 +12057,7 @@ lorry.setVisible(true);
 //   dedicated        : provider → BIWASE (loaded, direct)
 //   jolly outbound   : BIWASE → provider (empty, isReturning=false)
 //   jolly return leg : provider → BIWASE (loaded, isReturning=true)
+setSpeed(main.truckVelocity_kmh / 3.6);
 if (!isJolly) {
     if (truckIndex == 0) {
         // DEBUG: hardcoded scalar coords for truck0 GIS visibility test
