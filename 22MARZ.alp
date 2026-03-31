@@ -10534,7 +10534,9 @@ moveTo(intermediateLat, intermediateLon);
 					<Action><![CDATA[
 // Weekly landfill burn trigger
 if (WasteToBeBurned >= burningThreshold_t) {
-    send("Burn", this);
+    // CE3.0 fix: direct inject — ROOT_NODE is XOR so CombustionIdle is never entered;
+    // send("Burn", this) was silently dropped. Bypass statechart, call DES directly.
+    combustionStart.inject();
 }
 ]]></Action>
 				</Event>
