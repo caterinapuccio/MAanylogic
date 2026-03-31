@@ -1469,6 +1469,38 @@ validateExcelConnections();
 					</Properties>
 				</Variable>
 				<Variable Class="PlainVariable">
+					<Id>9981000000001</Id>
+					<Name><![CDATA[ctrl_tier1Cap]]></Name>
+					<Description><![CDATA[Runtime slider: Tier 1 capacity per material (t). 0 = use startup value.]]></Description>
+					<X>1990</X><Y>1700</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9981000000002</Id>
+					<Name><![CDATA[ctrl_tier2Cap]]></Name>
+					<Description><![CDATA[Runtime slider: Tier 2 shared capacity (t). 0 = use startup value.]]></Description>
+					<X>1990</X><Y>1730</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
 					<Id>8800000400003</Id>
 					<Name><![CDATA[intermediateLat]]></Name>
 					<Description><![CDATA[Intermediate agent latitude (read from Excel Intermediate sheet)]]></Description>
@@ -2121,7 +2153,17 @@ double monthlyIntOpex = usedCapacity * opexPerStorageUnitPerMonth;
 intermediate.intermediateOpex += monthlyIntOpex;
 intermediate.financialBalance -= monthlyIntOpex;
 intermediate.totalCosts       += monthlyIntOpex;
-// totalOpex deprecated — OPEX is tracked exclusively via intermediate.totalCosts]]></Action>
+// totalOpex deprecated — OPEX is tracked exclusively via intermediate.totalCosts
+
+// ── Sync slider-controlled tier capacities to Intermediate (monthly) ──────
+if (ctrl_tier1Cap > 0) {
+    for (int _m = 0; _m < 5; _m++) {
+        intermediate.tier1CapPerMat[_m] = ctrl_tier1Cap;
+    }
+}
+if (ctrl_tier2Cap > 0) {
+    intermediate.tier2SharedCapacity = ctrl_tier2Cap;
+}]]></Action>
 				</Event>
 				<Event>
 					<Id>1772103309237</Id>
@@ -3299,6 +3341,94 @@ if (currentYear >= 10) {
 					<Rotation>0.0</Rotation>
 					<Color>-16777216</Color>
 					<Text><![CDATA[Storage Capacity]]></Text>
+					<Font>
+						<Name>SansSerif</Name>
+						<Size>14</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
+				<Control Type="Slider">
+				 	<EmbeddedIcon>false</EmbeddedIcon>					
+					<Id>9981000000010</Id>
+					<Name><![CDATA[sliderTier1Cap]]></Name>
+					<X>1380</X><Y>2000</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<BasicProperties Width="100" Height="30">
+				        <EmbeddedIcon>false</EmbeddedIcon>	
+						<Enabled>true</Enabled>
+					</BasicProperties>
+					<ExtendedProperties>
+						<DefaultValueCode><![CDATA[0]]></DefaultValueCode>
+						<Orientation>HORIZONTAL</Orientation>
+						<MinValue><![CDATA[0]]></MinValue>
+						<MaxValue><![CDATA[500]]></MaxValue>
+						<LinkTo>true</LinkTo>
+						<Link>ctrl_tier1Cap</Link>
+					</ExtendedProperties>
+				</Control>
+				<Text>
+					<Id>9981000000011</Id>
+					<Name><![CDATA[lblTier1Cap]]></Name>
+					<X>1480</X><Y>2010</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-16777216</Color>
+					<Text><![CDATA[Ø Tier1 Cap/mat (t)]]></Text>
+					<Font>
+						<Name>SansSerif</Name>
+						<Size>14</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
+				<Control Type="Slider">
+				 	<EmbeddedIcon>false</EmbeddedIcon>					
+					<Id>9981000000012</Id>
+					<Name><![CDATA[sliderTier2Cap]]></Name>
+					<X>1380</X><Y>2040</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<BasicProperties Width="100" Height="30">
+				        <EmbeddedIcon>false</EmbeddedIcon>	
+						<Enabled>true</Enabled>
+					</BasicProperties>
+					<ExtendedProperties>
+						<DefaultValueCode><![CDATA[0]]></DefaultValueCode>
+						<Orientation>HORIZONTAL</Orientation>
+						<MinValue><![CDATA[0]]></MinValue>
+						<MaxValue><![CDATA[2000]]></MaxValue>
+						<LinkTo>true</LinkTo>
+						<Link>ctrl_tier2Cap</Link>
+					</ExtendedProperties>
+				</Control>
+				<Text>
+					<Id>9981000000013</Id>
+					<Name><![CDATA[lblTier2Cap]]></Name>
+					<X>1480</X><Y>2050</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-16777216</Color>
+					<Text><![CDATA[Ø Tier2 Shared Cap (t)]]></Text>
 					<Font>
 						<Name>SansSerif</Name>
 						<Size>14</Size>
@@ -11154,92 +11284,6 @@ send("CombustionFinished", this);]]></Code>
 			</Presentation>
 
 				</Group>
-				<Rectangle>
-					<Id>1773636224172</Id>
-					<Name><![CDATA[rectangle11]]></Name>
-					<X>30</X><Y>20</Y>
-					<Label><X>10</X><Y>10</Y></Label>
-					<PublicFlag>false</PublicFlag>
-					<PresentationFlag>true</PresentationFlag>
-					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
-					<EmbeddedIcon>false</EmbeddedIcon>
-					<Z>0</Z>
-					<ZHeight>10</ZHeight>
-					<LineWidth>1</LineWidth>
-					<LineColor>-16777216</LineColor>
-					<LineMaterial>null</LineMaterial>
-					<LineStyle>SOLID</LineStyle>
-					<Width>280</Width>
-					<Height>540</Height>
-					<Rotation>0.0</Rotation>
-					<FillColor>-657931</FillColor>
-					<FillMaterial>null</FillMaterial>
-				</Rectangle>
-				<Text>
-					<Id>1773636224177</Id>
-					<Name><![CDATA[text3]]></Name>
-					<X>100</X><Y>50</Y>
-					<Label><X>0</X><Y>-10</Y></Label>
-					<PublicFlag>true</PublicFlag>
-					<PresentationFlag>true</PresentationFlag>
-					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_2D</DrawMode>
-					<EmbeddedIcon>false</EmbeddedIcon>
-					<Z>0</Z>
-					<Rotation>0.0</Rotation>
-					<Color>-16777216</Color>
-					<Text><![CDATA[Main Statechart]]></Text>
-					<Font>
-						<Name>SansSerif</Name>
-						<Size>15</Size>
-						<Style>1</Style>
-					</Font>
-					<Alignment>LEFT</Alignment>
-				</Text>
-				<Text>
-					<Id>1773636364521</Id>
-					<Name><![CDATA[text4]]></Name>
-					<X>930</X><Y>90</Y>
-					<Label><X>0</X><Y>-10</Y></Label>
-					<PublicFlag>false</PublicFlag>
-					<PresentationFlag>true</PresentationFlag>
-					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_2D</DrawMode>
-					<EmbeddedIcon>false</EmbeddedIcon>
-					<Z>0</Z>
-					<Rotation>0.0</Rotation>
-					<Color>-16777216</Color>
-					<Text><![CDATA[Statechart]]></Text>
-					<Font>
-						<Name>SansSerif</Name>
-						<Size>15</Size>
-						<Style>1</Style>
-					</Font>
-					<Alignment>LEFT</Alignment>
-				</Text>
-				<Rectangle>
-					<Id>1773636364525</Id>
-					<Name><![CDATA[rectangle12]]></Name>
-					<X>910</X><Y>80</Y>
-					<Label><X>10</X><Y>10</Y></Label>
-					<PublicFlag>false</PublicFlag>
-					<PresentationFlag>true</PresentationFlag>
-					<ShowLabel>false</ShowLabel>
-					<DrawMode>SHAPE_DRAW_3D</DrawMode>
-					<EmbeddedIcon>false</EmbeddedIcon>
-					<Z>0</Z>
-					<ZHeight>10</ZHeight>
-					<LineWidth>1</LineWidth>
-					<LineColor>-16777216</LineColor>
-					<LineMaterial>null</LineMaterial>
-					<LineStyle>SOLID</LineStyle>
-					<Width>270</Width>
-					<Height>420</Height>
-					<Rotation>0.0</Rotation>
-					<FillColor>-657931</FillColor>
-					<FillMaterial>null</FillMaterial>
-				</Rectangle>
     			<TimePlot>
 					<Id>9913000000001</Id>
 					<Name><![CDATA[intFinancial]]></Name>
@@ -11800,6 +11844,22 @@ jumpTo(main.intermediateLat, main.intermediateLon);
 						</InitialValue>
 					</Properties>
 				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9996000000001</Id>
+					<Name><![CDATA[myTripLog]]></Name>
+					<Description><![CDATA[Per-truck trip log. Each entry: formatted string with day, route, material, payload, transit time. Visible in truck presentation when you navigate to the truck.]]></Description>
+					<X>60</X><Y>260</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[java.util.ArrayList]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[new java.util.ArrayList<String>()]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 			</Variables>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -11814,6 +11874,8 @@ jumpTo(main.intermediateLat, main.intermediateLon);
 						<EntryAction><![CDATA[busy = false;
 // DEBUG: lorry.setVisible(false); // commented out — keeping lorry always visible for GIS visibility test
 isReturning = false;
+// Capture landfill flag BEFORE it is cleared at step 3b
+boolean _wasLandfill = isLandfillRun;
 
 // ── 1. Capture provider info BEFORE clearing sourceProvider ──────────────
 String _logProvName = "?";
@@ -11885,6 +11947,11 @@ if (time(DAY) > 0) {
             truckIndex, time(DAY), tripsCompleted, lastPayloadTonnes,
             _logMaterial, _logProvName, totalMassCarried, transitDays));
     }
+    // ── Per-truck trip log entry ─────────────────────────────────────────────
+    String _tripType = _wasLandfill ? "LANDFILL" : "IS-RECYCLE";
+    myTripLog.add(String.format(
+        "Day%7.1f | %-11s | From: %-30s | Mat: %-12s | %6.3f t | Transit: %.2f d",
+        time(DAY), _tripType, _logProvName, _logMaterial, lastPayloadTonnes, transitDays));
 }
 lastPayloadTonnes = 0.0;]]></EntryAction>
 						<FillColor/>
@@ -12522,6 +12589,30 @@ traceln(String.format("[TRUCK%d-LOADED] t=%.2fd | jolly arrived at %s | payload=
 						<LabelText><![CDATA[→ Main]]></LabelText>
 					</ExtendedProperties>
 				</Control>
+				<Text>
+					<Id>9996000000010</Id>
+					<Name><![CDATA[tripLogDisplay]]></Name>
+					<X>-600</X><Y>40</Y>
+					<Label><X>0</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-13421773</Color>
+					<Text><![CDATA[=== TRIP LOG ===]]></Text>
+					<TextCode><![CDATA["=== TRUCK #" + truckIndex + " TRIP LOG  (" + tripsCompleted + " trips | " + String.format("%.1f",totalMassCarried) + " t total) ===\n"
++ (myTripLog.isEmpty() ? "(no trips yet)" : String.join("\n",
+    (java.util.List<String>) myTripLog.subList(Math.max(0, myTripLog.size()-30), myTripLog.size())))]]></TextCode>
+					<Font>
+						<Name>Monospaced</Name>
+						<Size>11</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
 			</Presentation>
 
 				</Level>
