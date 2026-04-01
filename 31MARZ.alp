@@ -7539,6 +7539,7 @@ if (deliveredQty > 0) {
         }
     }
 }
+}
 
 // Activity log: weekly demand cycle summary
 myActivityLog.add(String.format("Day%7.1f | DEM=%.3ft | IS=%.3ft | VIRGIN=%.3ft | %s",
