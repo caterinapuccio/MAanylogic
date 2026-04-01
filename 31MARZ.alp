@@ -9536,29 +9536,54 @@ else return black;]]></Body>
 						</InitialValue>
 					</Properties>
 				</Variable>
-				<Variable>
+				<!-- ── Phase 11: Incineration LCA factors HTP / LUP / CED ── -->
+				<Variable Class="PlainVariable">
 					<Id>9988000001</Id>
 					<Name><![CDATA[htpFactor_incineration_CTUhPerKg]]></Name>
 					<Description><![CDATA[HTP emission factor for incineration at BIWASE (CTUh / kg waste). Read from Intermediate sheet B18. ILLUSTRATIVE — replace with ecoinvent 3.9 'treatment of municipal solid waste by incineration' (RoW) before thesis submission.]]></Description>
-					<InitialValue Class="CodeValue"><Code><![CDATA[2.5e-9]]></Code></InitialValue>
-					<Type><![CDATA[double]]></Type>
-					<Access>package</Access>
+					<X>-420</X><Y>1510</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[2.5e-9]]></Code>
+						</InitialValue>
+					</Properties>
 				</Variable>
-				<Variable>
+				<Variable Class="PlainVariable">
 					<Id>9988000002</Id>
 					<Name><![CDATA[lupFactor_incineration_m2yrPerKg]]></Name>
 					<Description><![CDATA[LUP emission factor for incineration at BIWASE (m2yr / kg waste). Read from Intermediate sheet B19. ILLUSTRATIVE — replace with ecoinvent 3.9 before thesis submission.]]></Description>
-					<InitialValue Class="CodeValue"><Code><![CDATA[0.002]]></Code></InitialValue>
-					<Type><![CDATA[double]]></Type>
-					<Access>package</Access>
+					<X>-420</X><Y>1530</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.002]]></Code>
+						</InitialValue>
+					</Properties>
 				</Variable>
-				<Variable>
+				<Variable Class="PlainVariable">
 					<Id>9988000003</Id>
 					<Name><![CDATA[cedFactor_incineration_MJPerKg]]></Name>
 					<Description><![CDATA[CED emission factor for incineration at BIWASE (MJ / kg waste). Read from Intermediate sheet B20. ILLUSTRATIVE — replace with ecoinvent 3.9 before thesis submission.]]></Description>
-					<InitialValue Class="CodeValue"><Code><![CDATA[0.8]]></Code></InitialValue>
-					<Type><![CDATA[double]]></Type>
-					<Access>package</Access>
+					<X>-420</X><Y>1550</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.8]]></Code>
+						</InitialValue>
+					</Properties>
 				</Variable>
 			</Variables>
 			<Connectors>
