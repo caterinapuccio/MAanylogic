@@ -420,6 +420,13 @@ public void validateExcelConnections() {
     chkRange("Intermediate", "gwpFactor_drying_kgCO2eqPerKg",        "B", 15, intermediate.gwpFactor_drying_kgCO2eqPerKg,        0.0, 10.0, false);
     chkRange("Intermediate", "gwpFactor_thermalDecomp_kgCO2eqPerKg", "B", 16, intermediate.gwpFactor_thermalDecomp_kgCO2eqPerKg, 0.0, 10.0, false);
     chkRange("Intermediate", "gwpFactor_slagFormation_kgCO2eqPerKg", "B", 17, intermediate.gwpFactor_slagFormation_kgCO2eqPerKg, 0.0, 10.0, false);
+    // Phase 11: Incineration LCA factors for HTP, LUP, CED (Intermediate sheet B18-20)
+    intermediate.htpFactor_incineration_CTUhPerKg  = Input_data.getCellNumericValue("Intermediate", 18, 2); // B18
+    intermediate.lupFactor_incineration_m2yrPerKg  = Input_data.getCellNumericValue("Intermediate", 19, 2); // B19
+    intermediate.cedFactor_incineration_MJPerKg    = Input_data.getCellNumericValue("Intermediate", 20, 2); // B20
+    chkRange("Intermediate", "htpFactor_incineration_CTUhPerKg",  "B", 18, intermediate.htpFactor_incineration_CTUhPerKg,  0.0, 1.0, false);
+    chkRange("Intermediate", "lupFactor_incineration_m2yrPerKg",  "B", 19, intermediate.lupFactor_incineration_m2yrPerKg,  0.0, 1e6, false);
+    chkRange("Intermediate", "cedFactor_incineration_MJPerKg",    "B", 20, intermediate.cedFactor_incineration_MJPerKg,    0.0, 1e4, false);
 
     // ── Intermediate Investment sheet ──────────────────────────────────────────
     chkRange("Intermediate Investment", "recyclingCapex_SGD",      "B", 3, intermediate.recyclingCapex,      0.0, 1e9,  true);
@@ -4828,12 +4835,13 @@ double _gwpCombustion = main.intermediate.gwpFactor_drying_kgCO2eqPerKg
 GWPActualProcess   += kgWasteN * _gwpCombustion;
 GWPActualTotal     += GWPTransportToLandfill + kgWasteN * _gwpCombustion;
 GWPNoIS  += GWPTransportToLandfill + kgWasteN * _gwpCombustion;  // no-IS: actual = incineration
-HTPActualProcess += kgWasteN * main.HTPWasteToLandfill[matIdx];
-HTPNoIS += kgWasteN * main.HTPWasteToLandfill[matIdx];
-LUPActualProcess += kgWasteN * main.LUPWasteToLandfill[matIdx];
-LUPNoIS += kgWasteN * main.LUPWasteToLandfill[matIdx];
-CEDActualProcess += kgWasteN * main.CEDWasteToLandfill[matIdx];
-CEDNoIS += kgWasteN * main.CEDWasteToLandfill[matIdx];
+// Phase 11: non-IS waste → incineration — use combustion-specific HTP/LUP/CED factors
+HTPActualProcess += kgWasteN * main.intermediate.htpFactor_incineration_CTUhPerKg;
+HTPNoIS          += kgWasteN * main.intermediate.htpFactor_incineration_CTUhPerKg;
+LUPActualProcess += kgWasteN * main.intermediate.lupFactor_incineration_m2yrPerKg;
+LUPNoIS          += kgWasteN * main.intermediate.lupFactor_incineration_m2yrPerKg;
+CEDActualProcess += kgWasteN * main.intermediate.cedFactor_incineration_MJPerKg;
+CEDNoIS          += kgWasteN * main.intermediate.cedFactor_incineration_MJPerKg;
 
 // ── Physical truck dispatch: Provider → Intermediate landfill buffer ──────
 // Reuses same truck pool as IS path. Truck carries rawWaste t from this site
@@ -9528,6 +9536,30 @@ else return black;]]></Body>
 						</InitialValue>
 					</Properties>
 				</Variable>
+				<Variable>
+					<Id>9988000001</Id>
+					<Name><![CDATA[htpFactor_incineration_CTUhPerKg]]></Name>
+					<Description><![CDATA[HTP emission factor for incineration at BIWASE (CTUh / kg waste). Read from Intermediate sheet B18. ILLUSTRATIVE — replace with ecoinvent 3.9 'treatment of municipal solid waste by incineration' (RoW) before thesis submission.]]></Description>
+					<InitialValue Class="CodeValue"><Code><![CDATA[2.5e-9]]></Code></InitialValue>
+					<Type><![CDATA[double]]></Type>
+					<Access>package</Access>
+				</Variable>
+				<Variable>
+					<Id>9988000002</Id>
+					<Name><![CDATA[lupFactor_incineration_m2yrPerKg]]></Name>
+					<Description><![CDATA[LUP emission factor for incineration at BIWASE (m2yr / kg waste). Read from Intermediate sheet B19. ILLUSTRATIVE — replace with ecoinvent 3.9 before thesis submission.]]></Description>
+					<InitialValue Class="CodeValue"><Code><![CDATA[0.002]]></Code></InitialValue>
+					<Type><![CDATA[double]]></Type>
+					<Access>package</Access>
+				</Variable>
+				<Variable>
+					<Id>9988000003</Id>
+					<Name><![CDATA[cedFactor_incineration_MJPerKg]]></Name>
+					<Description><![CDATA[CED emission factor for incineration at BIWASE (MJ / kg waste). Read from Intermediate sheet B20. ILLUSTRATIVE — replace with ecoinvent 3.9 before thesis submission.]]></Description>
+					<InitialValue Class="CodeValue"><Code><![CDATA[0.8]]></Code></InitialValue>
+					<Type><![CDATA[double]]></Type>
+					<Access>package</Access>
+				</Variable>
 			</Variables>
 			<Connectors>
 				<Connector>
@@ -11457,6 +11489,13 @@ double _gwpDry   = cycleMass_kg * gwpFactor_drying_kgCO2eqPerKg;
 double _gwpTherm = cycleMass_kg * gwpFactor_thermalDecomp_kgCO2eqPerKg;
 double _gwpSlag  = cycleMass_kg * gwpFactor_slagFormation_kgCO2eqPerKg;
 GWPActualIncineration += _gwpDry + _gwpTherm + _gwpSlag;
+// Phase 11: facility-level HTP, LUP, CED for incineration
+double _htpInc = cycleMass_kg * htpFactor_incineration_CTUhPerKg;
+double _lupInc = cycleMass_kg * lupFactor_incineration_m2yrPerKg;
+double _cedInc = cycleMass_kg * cedFactor_incineration_MJPerKg;
+// (stored as local for future facility-level HTP/LUP/CED accumulators — see Phase 12)
+traceln(String.format("[COMBUSTION-LCA t=%.1fd] Δ GWP=%.2f | HTP=%.2e | LUP=%.4f | CED=%.2f",
+    time(DAY), _gwpDry+_gwpTherm+_gwpSlag, _htpInc, _lupInc, _cedInc));
 traceln(String.format("[COMBUSTION-COMPLETE] t=%.1f | cycle=%.2f t | total_burned=%.2f t | cumCO2=%.2f kg | cumCO=%.4f kg | cumNOx=%.4f kg",
     time(), cycleMass_t, WasteBurned, totalCO2EmittedKg, totalCOEmittedKg, totalNOxEmittedKg));
 send("CombustionFinished", this);]]></Code>
@@ -11621,7 +11660,17 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
 						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
-						<Parameter><Name><![CDATA[onEnter]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// STEP 1 — SHREDDING  (mechanical size reduction)
+// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
+//   "treatment of plastic waste, via mechanical recycling" → size reduction subprocess (RoW or CN geography)
+// Add per-step EF to Intermediate Excel sheet (rows TBD) for GWP, HTP, CED, LUP.
+// LCA computation: recyclQty_kg × efShredding_GWP_kgCO2eqPerKg → GWPActualProcess
+// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+						</Value>
+					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
@@ -11678,7 +11727,17 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
 						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
-						<Parameter><Name><![CDATA[onEnter]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// STEP 2 — WASHING  (aqueous cleaning / contaminant removal)
+// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
+//   "treatment of plastic waste, via mechanical recycling" → washing subprocess (RoW or CN geography)
+// Add per-step EF to Intermediate Excel sheet for GWP, HTP, CED, LUP.
+// Note: HTP may be significant at this step (detergent / surfactant use).
+// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+						</Value>
+					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
@@ -11735,7 +11794,16 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
 						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
-						<Parameter><Name><![CDATA[onEnter]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// STEP 3 — SEPARATION  (density / flotation sorting by polymer type)
+// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
+//   "treatment of plastic waste, via mechanical recycling" → separation subprocess (RoW or CN geography)
+// Add per-step EF to Intermediate Excel sheet for GWP, HTP, CED, LUP.
+// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+						</Value>
+					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
@@ -11792,7 +11860,18 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
 						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
-						<Parameter><Name><![CDATA[onEnter]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// STEP 4 — EXTRUSION  (melt processing → recycled pellets / regranulate)
+// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
+//   "treatment of plastic waste, via mechanical recycling" → pelletising / extrusion subprocess (RoW or CN geography)
+// Add per-step EF to Intermediate Excel sheet for GWP, HTP, CED, LUP.
+// Note: highest energy step (~50 % of total process energy).
+// Consider system-expansion credit for avoided virgin polymer production — thesis methodology choice.
+// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+						</Value>
+					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
 						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
