@@ -413,6 +413,13 @@ public void validateExcelConnections() {
     chkRange("Intermediate", "emissionFactor_CO2_kgPerKg",  "B", 12, intermediate.emissionFactor_CO2_kgPerKg,  0.0,   5.0,  false);
     chkRange("Intermediate", "emissionFactor_CO_kgPerKg",   "B", 13, intermediate.emissionFactor_CO_kgPerKg,   0.0,   1.0,  false);
     chkRange("Intermediate", "emissionFactor_NOx_kgPerKg",  "B", 14, intermediate.emissionFactor_NOx_kgPerKg,  0.0,   1.0,  false);
+    // Phase 10: Combustion LCA GWP stage factors (kg CO2-eq / kg waste)
+    intermediate.gwpFactor_drying_kgCO2eqPerKg        = Input_data.getCellNumericValue("Intermediate", 15, 2); // B15
+    intermediate.gwpFactor_thermalDecomp_kgCO2eqPerKg = Input_data.getCellNumericValue("Intermediate", 16, 2); // B16
+    intermediate.gwpFactor_slagFormation_kgCO2eqPerKg = Input_data.getCellNumericValue("Intermediate", 17, 2); // B17
+    chkRange("Intermediate", "gwpFactor_drying_kgCO2eqPerKg",        "B", 15, intermediate.gwpFactor_drying_kgCO2eqPerKg,        0.0, 10.0, false);
+    chkRange("Intermediate", "gwpFactor_thermalDecomp_kgCO2eqPerKg", "B", 16, intermediate.gwpFactor_thermalDecomp_kgCO2eqPerKg, 0.0, 10.0, false);
+    chkRange("Intermediate", "gwpFactor_slagFormation_kgCO2eqPerKg", "B", 17, intermediate.gwpFactor_slagFormation_kgCO2eqPerKg, 0.0, 10.0, false);
 
     // ── Intermediate Investment sheet ──────────────────────────────────────────
     chkRange("Intermediate Investment", "recyclingCapex_SGD",      "B", 3, intermediate.recyclingCapex,      0.0, 1e9,  true);
@@ -4814,9 +4821,13 @@ this.financialBalance   -= tCost;
 // ── GWP breakdown tracking (no-IS baseline: all to landfill) ─────────────
 double kgWasteN = rawWaste * 1000.0;
 GWPActualTransport += GWPTransportToLandfill;
-GWPActualProcess   += kgWasteN * main.GWPWasteToLandfill[matIdx];
-GWPActualTotal     += GWPTransportToLandfill + kgWasteN * main.GWPWasteToLandfill[matIdx];
-GWPNoIS  += GWPTransportToLandfill + kgWasteN * main.GWPWasteToLandfill[matIdx];
+// Phase 10: non-IS waste goes to incineration — use 3-stage combustion GWP factors
+double _gwpCombustion = main.intermediate.gwpFactor_drying_kgCO2eqPerKg
+                      + main.intermediate.gwpFactor_thermalDecomp_kgCO2eqPerKg
+                      + main.intermediate.gwpFactor_slagFormation_kgCO2eqPerKg;
+GWPActualProcess   += kgWasteN * _gwpCombustion;
+GWPActualTotal     += GWPTransportToLandfill + kgWasteN * _gwpCombustion;
+GWPNoIS  += GWPTransportToLandfill + kgWasteN * _gwpCombustion;  // no-IS: actual = incineration
 HTPActualProcess += kgWasteN * main.HTPWasteToLandfill[matIdx];
 HTPNoIS += kgWasteN * main.HTPWasteToLandfill[matIdx];
 LUPActualProcess += kgWasteN * main.LUPWasteToLandfill[matIdx];
@@ -9383,6 +9394,140 @@ else return black;]]></Body>
 						</InitialValue>
 					</Properties>
 				</Variable>
+
+				<!-- ── Phase 10: Combustion LCA GWP factors (kg CO2-eq/kg, stage-specific) ── -->
+				<Variable Class="PlainVariable">
+					<Id>9987000001</Id>
+					<Name><![CDATA[gwpFactor_drying_kgCO2eqPerKg]]></Name>
+					<Description><![CDATA[GWP emission factor for waste drying stage (kg CO2-eq / kg waste). Read from Intermediate sheet B15. Update from ecoinvent/IPCC. Default 0.05 kg CO2-eq/kg (ILLUSTRATIVE).]]></Description>
+					<X>-420</X><Y>1350</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.05]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9987000002</Id>
+					<Name><![CDATA[gwpFactor_thermalDecomp_kgCO2eqPerKg]]></Name>
+					<Description><![CDATA[GWP emission factor for thermal decomposition stage (kg CO2-eq / kg waste). Read from Intermediate sheet B16. Default 0.80 (ILLUSTRATIVE).]]></Description>
+					<X>-420</X><Y>1370</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.80]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9987000003</Id>
+					<Name><![CDATA[gwpFactor_slagFormation_kgCO2eqPerKg]]></Name>
+					<Description><![CDATA[GWP emission factor for slag/ash formation stage (kg CO2-eq / kg waste). Read from Intermediate sheet B17. Default 0.02 (ILLUSTRATIVE).]]></Description>
+					<X>-420</X><Y>1390</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.02]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+
+				<!-- ── Phase 10: Process-waste LCA staging buffers for pwSink DES LCA ── -->
+				<Variable Class="PlainVariable">
+					<Id>9983000021</Id>
+					<Name><![CDATA[pw_pendingGWP]]></Name>
+					<Description><![CDATA[Staged GWP (kg CO2-eq) for current process-waste DES cycle. Set before pwStart.inject(); applied in pwSink.onEnter.]]></Description>
+					<X>-420</X><Y>1410</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9983000022</Id>
+					<Name><![CDATA[pw_pendingHTP]]></Name>
+					<Description><![CDATA[Staged HTP (kg 1,4-DCB-eq) for current process-waste DES cycle. Applied in pwSink.onEnter.]]></Description>
+					<X>-420</X><Y>1430</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9983000023</Id>
+					<Name><![CDATA[pw_pendingLUP]]></Name>
+					<Description><![CDATA[Staged LUP (m2a crop-eq) for current process-waste DES cycle. Applied in pwSink.onEnter.]]></Description>
+					<X>-420</X><Y>1450</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9983000024</Id>
+					<Name><![CDATA[pw_pendingCED]]></Name>
+					<Description><![CDATA[Staged CED (MJ) for current process-waste DES cycle. Applied in pwSink.onEnter.]]></Description>
+					<X>-420</X><Y>1470</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+
+				<!-- ── Phase 10: Cumulative incineration GWP (Intermediate facility-level reporting) ── -->
+				<Variable Class="PlainVariable">
+					<Id>9987000010</Id>
+					<Name><![CDATA[GWPActualIncineration]]></Name>
+					<Description><![CDATA[Cumulative LCA GWP (kg CO2-eq) from all incineration cycles at BIWASE. Computed per-stage in CombustionSink.onEnter (drying + thermalDecomp + slagFormation). Facility-level attribution separate from Provider.GWPActualProcess.]]></Description>
+					<X>-420</X><Y>1490</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
 			</Variables>
 			<Connectors>
 				<Connector>
@@ -10552,12 +10697,9 @@ for (int m = 0; m < nMat; m++) {
     HTPActualProcess  += kgConverted * main.HTPWasteToRecycling[m];
     LUPActualProcess  += kgConverted * main.LUPWasteToRecycling[m];
     CEDActualProcess  += kgConverted * main.CEDWasteToRecycling[m];
-    // Process waste fraction: landfill GWP (already sent to EoL above)
-    GWPActualProcess  += kgProcWaste * main.GWPWasteToLandfill[m];
-    HTPActualProcess  += kgProcWaste * main.HTPWasteToLandfill[m];
-    LUPActualProcess  += kgProcWaste * main.LUPWasteToLandfill[m];
-    CEDActualProcess  += kgProcWaste * main.CEDWasteToLandfill[m];
-    GWPActualTotal     = GWPActualTransport + GWPActualProcess;
+    // Process waste LCA: deferred to pwSink.onEnter (DES-based landfill accounting)
+    // pw_pendingGWP/HTP/LUP/CED accumulated in DES trigger block below.
+    GWPActualTotal     = GWPActualTransport + GWPActualProcess;  // partial; pw LCA added in pwSink
 
     // Reset buffer
     recyclingStoragePerMat[m] = 0;
@@ -10578,9 +10720,16 @@ for (int m = 0; m < nMat; m++) {
 // Reset tier2 usage tracking (buffers were emptied)
 tier2UsedCapacity = 0;
 
-// ── Trigger visualization DES (accounting already done above) ────────────
-pw_pendingQty = 0;
-for (int _m = 0; _m < nMat; _m++) pw_pendingQty += recyc_pendingProcessWaste[_m];
+// ── Trigger visualization DES + stage pw_pending* LCA for pwSink ────────
+pw_pendingQty = 0; pw_pendingGWP = 0.0; pw_pendingHTP = 0.0; pw_pendingLUP = 0.0; pw_pendingCED = 0.0;
+for (int _m = 0; _m < nMat; _m++) {
+    double _kgPW = recyc_pendingProcessWaste[_m] * 1000.0;
+    pw_pendingQty += recyc_pendingProcessWaste[_m];
+    pw_pendingGWP += _kgPW * main.GWPWasteToLandfill[_m];
+    pw_pendingHTP += _kgPW * main.HTPWasteToLandfill[_m];
+    pw_pendingLUP += _kgPW * main.LUPWasteToLandfill[_m];
+    pw_pendingCED += _kgPW * main.CEDWasteToLandfill[_m];
+}
 recyclStart.inject();
 if (pw_pendingQty > 0) pwStart.inject();]]></Body>
 				</Function>
@@ -11303,6 +11452,11 @@ WasteToBeBurned = 0.0;
 totalCO2EmittedKg += cycleMass_kg * emissionFactor_CO2_kgPerKg;
 totalCOEmittedKg  += cycleMass_kg * emissionFactor_CO_kgPerKg;
 totalNOxEmittedKg += cycleMass_kg * emissionFactor_NOx_kgPerKg;
+// Phase 10: per-stage LCA GWP (conservative: full mass at each stage — see thesis methodology)
+double _gwpDry   = cycleMass_kg * gwpFactor_drying_kgCO2eqPerKg;
+double _gwpTherm = cycleMass_kg * gwpFactor_thermalDecomp_kgCO2eqPerKg;
+double _gwpSlag  = cycleMass_kg * gwpFactor_slagFormation_kgCO2eqPerKg;
+GWPActualIncineration += _gwpDry + _gwpTherm + _gwpSlag;
 traceln(String.format("[COMBUSTION-COMPLETE] t=%.1f | cycle=%.2f t | total_burned=%.2f t | cumCO2=%.2f kg | cumCO=%.4f kg | cumNOx=%.4f kg",
     time(), cycleMass_t, WasteBurned, totalCO2EmittedKg, totalCOEmittedKg, totalNOxEmittedKg));
 send("CombustionFinished", this);]]></Code>
@@ -11930,7 +12084,7 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter>
 							<Name><![CDATA[onEnter]]></Name>
 							<Value Class="CodeValue">
-								<Code><![CDATA[// Process waste DES visualization complete — accounting already done in recyclingProcessing()\ntraceln(String.format(\"[PROCESSWASTE-DISPOSED t=%.1fd] %.3f t process waste staged for landfill\",\n    time(DAY), pw_pendingQty));\npw_pendingQty = 0.0;\njava.util.Arrays.fill(recyc_pendingRaw, 0.0);\njava.util.Arrays.fill(recyc_pendingProcessWaste, 0.0);]]></Code>
+								<Code><![CDATA[// Phase 10: Process waste landfill DES complete — apply staged LCA impact\nGWPActualProcess += pw_pendingGWP;\nHTPActualProcess += pw_pendingHTP;\nLUPActualProcess += pw_pendingLUP;\nCEDActualProcess += pw_pendingCED;\nGWPActualTotal    = GWPActualTransport + GWPActualProcess;\ntraceln(String.format(\"[LANDFILL-DES-COMPLETE t=%.1fd] %.3f t → landfill | ΔGWP=%.2f kg CO2-eq | cumGWP=%.2f kg CO2-eq\",\n    time(DAY), pw_pendingQty, pw_pendingGWP, GWPActualProcess));\n// Reset staging buffers\npw_pendingQty = 0.0; pw_pendingGWP = 0.0; pw_pendingHTP = 0.0; pw_pendingLUP = 0.0; pw_pendingCED = 0.0;\njava.util.Arrays.fill(recyc_pendingRaw, 0.0);\njava.util.Arrays.fill(recyc_pendingProcessWaste, 0.0);]]></Code>
 							</Value>
 						</Parameter>
 						<Parameter><Name><![CDATA[destroyEntity]]></Name></Parameter>
