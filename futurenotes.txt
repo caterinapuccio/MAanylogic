@@ -419,3 +419,67 @@ CONTEXT:
 
 IMPLEMENT WHEN: model is stable and no active parameter tuning is happening.
 
+
+
+────────────────────────────────────────────────────────────────────
+[16] ORGANIC WASTE — MaterialType extension to 6 materials (ready for next major phase)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  Organic waste (food waste, garden waste) can be composted → compost/fertilizer.
+  BIWASE does this already: composting 1,512 tpd actual, 6 fertilizer product types
+  sold commercially (ESCAR pp.34-39). Conversion efficiency ~0.20 (5:1 mass ratio).
+
+  IS loop: MSW organic fraction → BIWASE composting → compost sold to agricultural
+  buyers in Binh Duong region. This is a real, documented IS flow.
+
+  ecoinvent: "treatment of biowaste, composting" (process LCA)
+             "market for compost, at plant" (product credit)
+
+ARCHITECTURE CHANGE REQUIRED:
+  - Add ORGANIC_WASTE(5) to MaterialType enum
+  - All 5-element arrays → 6-element arrays:
+      conversionEffPerMat[6], pw_landfillSharePerMat[6], pw_incinerationSharePerMat[6],
+      noIS_landfillShare[6], noIS_incinerationShare[6], costLandfillPerMat[6], etc.
+  - All loops: for (int m = 0; m < 5; m++) → for (int m = 0; m < nMat; m++) (nMat=6)
+  - New TruckFleet column for organic material capacity (open truck, ~8-10 t)
+  - New Receiver agent: agricultural buyer of compost (1 agent, myMaterial=ORGANIC_WASTE)
+  - conversionEffPerMat[5] = 0.20 (from ESCAR 5:1 ratio)
+  - New DES chain: compost_Start → compost_Sorting → compost_Maturation → compost_Sink
+  - MSW provider is the primary (and initially only) ORGANIC_WASTE generator
+  - LCA for composting vs. landfill benefit: use ecoinvent entries above
+
+BEFORE IMPLEMENTING:
+  - Confirm nMat variable is used consistently in all loops (not hardcoded 5)
+  - Plan DataBase / Excel extension: new row in Materials sheet for ORGANIC_WASTE
+  - Plan Companies_Listing: add agricultural buyer Receiver row
+
+STATUS: Design complete. Ready to implement after MSW provider (item [11]) is done.
+
+[17] MSW ORGANIC FRACTION — INCINERATION vs. LANDFILL SPLIT (deferred, medium priority)
+
+STATUS: xxx flag active in model (noIS_incinerationShare[5] and noIS_landfillShare[5] both = 0.50)
+
+CONTEXT:
+In Phase 15, ORGANIC_WASTE (MaterialType index 5) noIS baseline scenario assumes an equal 50/50 split
+between incineration and landfill for the non-IS pathway. This is a modelling assumption [ASSUMED]
+based on general Southeast Asian MSW composition data (IPCC 2006 Vol. 5, Ch. 3; Hoornweg & Bhada-Tata 2012).
+No Vietnam-specific landfill/incineration split data for VSIP1 organic fractions has been confirmed.
+
+RESEARCH NEEDED:
+1. Primary: Binh Duong Province waste management statistics (DONRE / BIWASE annual reports)
+2. Secondary: Vietnam National Waste Management Strategy (Decision 491/QD-TTg, 2018 revision)
+3. Academic: Nguyen et al. (2021) "Municipal solid waste management in developing countries of Southeast Asia"
+   or equivalent for Vietnam-specific landfill vs. incineration allocation
+4. Consensus with thesis supervisors on whether 50/50 is defensible or should be revised
+
+ALP VARIABLES AFFECTED:
+  noIS_landfillShare[5]      = 0.50  // [ASSUMED] — revise after literature review
+  noIS_incinerationShare[5]  = 0.50  // [ASSUMED] — same
+  (Main agent, disposal arrays, CE 3.0 Phase 15)
+
+ACTION:
+Replace [ASSUMED] values with literature-based or field-confirmed split ratio.
+Update Main disposal arrays and remove xxx comments once consensus is reached.
+
+PRIORITY: Medium — affects GWP baseline comparison for ORGANIC_WASTE IS vs. noIS scenario.
+Required before thesis submission for section on noIS counterfactual scenario.

@@ -60,12 +60,27 @@ After brick production is implemented: the bottom ash fraction that goes to bric
 
 ---
 
-## E. Composting (MSW organic fraction)
+## E. Composting — ORGANIC_WASTE IS pathway (BIWASE composting → agricultural Receiver)
 
-| Process | Search string | Notes |
-|---|---|---|
-| Composting | `treatment of biowaste, composting` OR `market for compost, at plant` | For MSW 43.2% organic fraction |
-| Compost product use | `market for compost` | Revenue/credit side if BIWASE sells compost |
+BIWASE operates an active composting facility (ESCAR pp.34–39, 6 compost product types).
+In the CE3.0 model, ORGANIC_WASTE (MaterialType index 5) is composted at BIWASE and sold
+to an agricultural Receiver (Binh Duong region farm / fertilizer distributor).
+The IS benefit is the avoided landfill of the raw organic fraction PLUS the displacement
+of synthetic fertiliser by compost.
+
+**ALP wiring:** `GWPWasteToRecycling[5]` (composting process GWP) and `GWPWasteToLandfill[5]`
+(avoided landfill GWP) must be calibrated from the entries below.
+
+| Process | Search string | ALP variable | Notes |
+|---|---|---|---|
+| Composting process LCA | `treatment of biowaste, composting` | `GWPWasteToRecycling[5]` | Functional unit: 1 kg biowaste treated |
+| Compost product output | `market for compost, at plant` | credit in `co2SavedPerMat[5]` | Product credit (system expansion): 1 kg compost displaces virgin fertiliser |
+| Landfill avoided | `treatment of biowaste, sanitary landfill` | `GWPWasteToLandfill[5]` | Baseline for noIS path |
+| MSW organic fraction incineration | `treatment of organic fraction, biowaste, municipal incineration` | `GWPWasteToLandfill[5]` (incineration share) | For noIS_incinerationShare[5] = 0.50 [ASSUMED — xxx: needs consensus] |
+| Synthetic fertiliser displaced | `market for nitrogen fertiliser, as N` or `market for phosphate fertiliser` | Product credit (revenue-side LCA) | Compost nutrient content: N ~1%, P ~0.5%, K ~0.5% (ESCAR) |
+
+**Conversion ratio:** 5:1 (5 kg organic waste → 1 kg compost). ALP: `conversionEffPerMat[5] = 0.20`.
+**Geography preference:** Vietnam → RAS → GLO.
 
 ---
 
