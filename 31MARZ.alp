@@ -174,6 +174,20 @@ double[] processingEffPerMat  = new double[5];  // Receiver production efficienc
 // TODO: replace with per-material Excel values once calibrated
 double[] pricePaidToProvider  = new double[5];  // SGD/t (neg=provider pays, pos=provider receives)
 
+// Process waste fate — material-specific arrays (Consensus-validated 2026-04-02)
+// [0]=PLASTIC_SCRAP  [1]=PAPER_WASTE  [2]=FERROUS_METAL  [3]=TEXTILE_WASTE  [4]=NON_FERROUS_METAL
+// pw_* = fate of recycling residue (processWaste = rawBuffer*(1-convEff)) at BIWASE hub
+// Sources: Vietnam plastic 2024 (ET Journal); Vietnam TV MFA 2018 (RCR); Thai Al LCA 2025 (IOP);
+//          SE Asia MSW 2023 (Sustainability); Textile waste 2024 (Energies)
+double[] pw_landfillSharePerMat     = {0.70, 0.80, 0.85, 0.50, 0.85};  // recycling residue → landfill
+double[] pw_incinerationSharePerMat = {0.25, 0.10, 0.05, 0.40, 0.10};  // recycling residue → incineration
+// noIS disposal: fate of waste when provider does NOT enter IS network (BAU baseline)
+double[] noIS_landfillShare         = {0.60, 0.75, 0.15, 0.55, 0.15};  // → landfill/open dump
+double[] noIS_incinerationShare     = {0.30, 0.10, 0.05, 0.35, 0.05};  // → incineration/open burning
+// Ash fractions (read from Excel Intermediate sheet rows 26-27)
+double bottomAsh_massFraction = 0.25;  // mass fraction of incinerated waste → bottom ash
+double flyAsh_massFraction    = 0.04;  // mass fraction → fly ash (hazardous)
+
 // Transport parameters
 double transportGWP  = 0.000206378;   // kg CO2-eq per kg*km (truck diesel)
 double transportCost = 0.10;          // SGD per tonne*km
@@ -845,6 +859,19 @@ salvageValuePercent        = Input_data.getCellNumericValue("Intermediate", 9, 2
 discountRate               = Input_data.getCellNumericValue("Intermediate", 10, 2); // 0.08  (R10)
 // investedStorageCapacity mirrors the Intermediate sheet StorageCapacity_total
 investedStorageCapacity    = intTotalStorage;
+
+// ─── Process waste fate parameters (arrays hard-coded; ash fractions from Excel) ─
+// pw_landfillSharePerMat / pw_incinerationSharePerMat : Consensus-backed arrays (initialized inline above)
+// noIS_landfillShare / noIS_incinerationShare          : Consensus-backed arrays (initialized inline above)
+// pw_otherShare = 1 - landfill - incineration (closure term, computed in recyclingProcessing())
+bottomAsh_massFraction = Input_data.getCellNumericValue("Intermediate", 26, 2); // 0.25
+flyAsh_massFraction    = Input_data.getCellNumericValue("Intermediate", 27, 2); // 0.04
+traceln("CE3.0: pw_landfillSharePerMat="     + java.util.Arrays.toString(pw_landfillSharePerMat));
+traceln("CE3.0: pw_incinerationSharePerMat=" + java.util.Arrays.toString(pw_incinerationSharePerMat));
+traceln("CE3.0: noIS_landfillShare="         + java.util.Arrays.toString(noIS_landfillShare));
+traceln("CE3.0: noIS_incinerationShare="     + java.util.Arrays.toString(noIS_incinerationShare));
+traceln("CE3.0: bottomAsh_massFraction=" + bottomAsh_massFraction
+    + " flyAsh_massFraction=" + flyAsh_massFraction);
 
 // ─── 3. Read Intermediate location from Companies_Listing ───────────────────
 // Row 88 = Intermediate agent; Col5=Latitude, Col6=Longitude
@@ -3811,6 +3838,91 @@ if (currentYear >= 10) {
 						<Link>useIS</Link>
 	 				</ExtendedProperties>
 				</Control>
+<Control Type="Button">
+ 	<EmbeddedIcon>false</EmbeddedIcon>
+	<Id>9991000001</Id>
+	<Name><![CDATA[btnNavIntermediate]]></Name>
+	<X>1380</X><Y>1590</Y>
+	<Label><X>10</X><Y>0</Y></Label>
+	<PublicFlag>false</PublicFlag>
+	<PresentationFlag>true</PresentationFlag>
+	<ShowLabel>false</ShowLabel>
+	<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+	<BasicProperties Width="160" Height="35">
+        <EmbeddedIcon>false</EmbeddedIcon>
+		<TextColor>-16777216</TextColor>
+		<Enabled>true</Enabled>
+		<ActionCode><![CDATA[intermediate._origin_VA.navigateTo();]]></ActionCode>
+	</BasicProperties>
+	<ExtendedProperties>
+		<Font Name="Dialog" Size="14" Style="1"/>
+		<LabelText><![CDATA[→ Intermediate]]></LabelText>
+	</ExtendedProperties>
+</Control>
+<Control Type="Button">
+ 	<EmbeddedIcon>false</EmbeddedIcon>
+	<Id>9991000002</Id>
+	<Name><![CDATA[btnNavProvider]]></Name>
+	<X>1380</X><Y>1640</Y>
+	<Label><X>10</X><Y>0</Y></Label>
+	<PublicFlag>false</PublicFlag>
+	<PresentationFlag>true</PresentationFlag>
+	<ShowLabel>false</ShowLabel>
+	<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+	<BasicProperties Width="160" Height="35">
+        <EmbeddedIcon>false</EmbeddedIcon>
+		<TextColor>-16777216</TextColor>
+		<Enabled>true</Enabled>
+		<ActionCode><![CDATA[if (!providers.isEmpty()) providers.get(0)._origin_VA.navigateTo();]]></ActionCode>
+	</BasicProperties>
+	<ExtendedProperties>
+		<Font Name="Dialog" Size="14" Style="1"/>
+		<LabelText><![CDATA[→ Provider [0]]]></LabelText>
+	</ExtendedProperties>
+</Control>
+<Control Type="Button">
+ 	<EmbeddedIcon>false</EmbeddedIcon>
+	<Id>9991000003</Id>
+	<Name><![CDATA[btnNavReceiver]]></Name>
+	<X>1380</X><Y>1690</Y>
+	<Label><X>10</X><Y>0</Y></Label>
+	<PublicFlag>false</PublicFlag>
+	<PresentationFlag>true</PresentationFlag>
+	<ShowLabel>false</ShowLabel>
+	<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+	<BasicProperties Width="160" Height="35">
+        <EmbeddedIcon>false</EmbeddedIcon>
+		<TextColor>-16777216</TextColor>
+		<Enabled>true</Enabled>
+		<ActionCode><![CDATA[if (!receivers.isEmpty()) receivers.get(0)._origin_VA.navigateTo();]]></ActionCode>
+	</BasicProperties>
+	<ExtendedProperties>
+		<Font Name="Dialog" Size="14" Style="1"/>
+		<LabelText><![CDATA[→ Receiver [0]]]></LabelText>
+	</ExtendedProperties>
+</Control>
+<Control Type="Button">
+ 	<EmbeddedIcon>false</EmbeddedIcon>
+	<Id>9991000004</Id>
+	<Name><![CDATA[btnNavTruck]]></Name>
+	<X>1380</X><Y>1740</Y>
+	<Label><X>10</X><Y>0</Y></Label>
+	<PublicFlag>false</PublicFlag>
+	<PresentationFlag>true</PresentationFlag>
+	<ShowLabel>false</ShowLabel>
+	<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+	<BasicProperties Width="160" Height="35">
+        <EmbeddedIcon>false</EmbeddedIcon>
+		<TextColor>-16777216</TextColor>
+		<Enabled>true</Enabled>
+		<ActionCode><![CDATA[if (!garbageTrucks.isEmpty()) garbageTrucks.get(0)._origin_VA.navigateTo();]]></ActionCode>
+	</BasicProperties>
+	<ExtendedProperties>
+		<Font Name="Dialog" Size="14" Style="1"/>
+		<LabelText><![CDATA[→ Truck [0]]]></LabelText>
+	</ExtendedProperties>
+</Control>
+
 			</Presentation>
 
 				</Level>
@@ -4806,13 +4918,18 @@ if (getIndex() == 0) {
 // LCA accounting for the transport leg is recorded here (provider-side);
 // incineration emissions are recorded in Intermediate.combustionSlagEvent.
 int matIdx = main.matIndex(myMaterial);
-myActivityLog.add(String.format("Day%7.1f | NON-IS     | %.3f t %s -> landfill buffer",
+myActivityLog.add(String.format("Day%7.1f | NON-IS     | %.3f t %s -> LF/incin (fracs from noIS arrays)",
     time(DAY), rawWaste, myMaterial));
 double distEoL = main.haversineKm(providerLat, providerLon,
                                    main.intermediateLat, main.intermediateLon);
 
-// ── Financial: landfill disposal + transport cost ────────────────────────
-double disposalCost = rawWaste * main.costLandfillPerMat[matIdx];
+// ── Financial: material-specific disposal cost (landfill share × costLandfill as proxy) ──────────────────────────
+// noIS_landfillShare / noIS_incinerationShare per material (Consensus-validated 2026-04-02)
+double noIS_lf_frac    = main.noIS_landfillShare[matIdx];      // fraction to landfill/open dump
+double noIS_incin_frac = main.noIS_incinerationShare[matIdx];  // fraction to incineration/open burning
+// Financial: landfill cost applied to the landfill+other fraction (incineration cost not parameterized yet)
+double disposalCost = rawWaste * noIS_lf_frac * main.costLandfillPerMat[matIdx]
+                    + rawWaste * noIS_incin_frac * main.costLandfillPerMat[matIdx]; // incineration ≈ landfill cost proxy
 this.financialBalance            -= disposalCost;
 this.totalCosts                  += disposalCost;
 main.landfillCostPerMat[matIdx]  += disposalCost;
@@ -8632,7 +8749,7 @@ else return black;]]></Body>
 					<Id>8800000300001</Id>
 					<Name><![CDATA[totalStorageCapacity]]></Name>
 					<Description><![CDATA[Total storage capacity (t) for the Intermediate recycler]]></Description>
-					<X>-220</X><Y>130</Y>
+					<X>-880</X><Y>650</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8648,7 +8765,7 @@ else return black;]]></Body>
 					<Id>8800000300002</Id>
 					<Name><![CDATA[tier1CapPerMat]]></Name>
 					<Description><![CDATA[Tier 1 guaranteed capacity per material type (t)]]></Description>
-					<X>-220</X><Y>160</Y>
+					<X>-880</X><Y>680</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8664,7 +8781,7 @@ else return black;]]></Body>
 					<Id>8800000300003</Id>
 					<Name><![CDATA[tier2SharedCapacity]]></Name>
 					<Description><![CDATA[Tier 2 flexible shared pool capacity (t)]]></Description>
-					<X>-220</X><Y>190</Y>
+					<X>-880</X><Y>710</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8679,7 +8796,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300004</Id>
 					<Name><![CDATA[tier2UsedCapacity]]></Name>
-					<X>-220</X><Y>220</Y>
+					<X>-880</X><Y>740</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8695,7 +8812,7 @@ else return black;]]></Body>
 					<Id>9930000000001</Id>
 					<Name><![CDATA[GWPActualTransport]]></Name>
 					<Description><![CDATA[Cumulative GWP from transport operations (collection from providers + delivery to receivers).]]></Description>
-					<X>-220</X><Y>60</Y>
+					<X>-600</X><Y>30</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8711,7 +8828,7 @@ else return black;]]></Body>
 					<Id>9930000000002</Id>
 					<Name><![CDATA[GWPActualProcess]]></Name>
 					<Description><![CDATA[Cumulative GWP from recycling process (GWPWasteToRecycling×mass) + process waste disposal.]]></Description>
-					<X>-220</X><Y>100</Y>
+					<X>-600</X><Y>60</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8727,7 +8844,7 @@ else return black;]]></Body>
 					<Id>9930000000003</Id>
 					<Name><![CDATA[GWPActualTotal]]></Name>
 					<Description><![CDATA[GWPActualTransport + GWPActualProcess]]></Description>
-					<X>-220</X><Y>0</Y>
+					<X>-600</X><Y>0</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8743,7 +8860,7 @@ else return black;]]></Body>
 					<Id>9930000000004</Id>
 					<Name><![CDATA[HTPActualProcess]]></Name>
 					<Description><![CDATA[Cumulative HTP from recycling process (CTUh).]]></Description>
-					<X>-220</X><Y>20</Y>
+					<X>-600</X><Y>90</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8759,7 +8876,7 @@ else return black;]]></Body>
 					<Id>9930000000005</Id>
 					<Name><![CDATA[LUPActualProcess]]></Name>
 					<Description><![CDATA[Cumulative LUP from recycling process (m2yr).]]></Description>
-					<X>-220</X><Y>40</Y>
+					<X>-600</X><Y>120</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8775,7 +8892,7 @@ else return black;]]></Body>
 					<Id>9930000000006</Id>
 					<Name><![CDATA[CEDActualProcess]]></Name>
 					<Description><![CDATA[Cumulative CED from recycling process (MJ).]]></Description>
-					<X>-220</X><Y>80</Y>
+					<X>-600</X><Y>150</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8791,7 +8908,7 @@ else return black;]]></Body>
 					<Id>8800000300005</Id>
 					<Name><![CDATA[currentStockPerMat]]></Name>
 					<Description><![CDATA[Current processed (recycled) stock per material (t), ready for sale]]></Description>
-					<X>-220</X><Y>250</Y>
+					<X>-880</X><Y>770</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8807,7 +8924,7 @@ else return black;]]></Body>
 					<Id>8800000300006</Id>
 					<Name><![CDATA[recyclingStoragePerMat]]></Name>
 					<Description><![CDATA[Raw waste buffer per material awaiting processing (t)]]></Description>
-					<X>-220</X><Y>280</Y>
+					<X>-880</X><Y>800</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8822,7 +8939,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300010</Id>
 					<Name><![CDATA[financialBalance]]></Name>
-					<X>-220</X><Y>360</Y>
+					<X>-250</X><Y>0</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8837,7 +8954,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300011</Id>
 					<Name><![CDATA[totalCosts]]></Name>
-					<X>-220</X><Y>390</Y>
+					<X>-250</X><Y>30</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8852,7 +8969,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300012</Id>
 					<Name><![CDATA[totalRevenues]]></Name>
-					<X>-220</X><Y>420</Y>
+					<X>-250</X><Y>60</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8867,7 +8984,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300013</Id>
 					<Name><![CDATA[entityNPV]]></Name>
-					<X>370</X><Y>490</Y>
+					<X>-250</X><Y>90</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8882,7 +8999,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300014</Id>
 					<Name><![CDATA[lastYearNetBalance]]></Name>
-					<X>-220</X><Y>480</Y>
+					<X>-250</X><Y>120</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>false</PresentationFlag>
@@ -8897,7 +9014,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300015</Id>
 					<Name><![CDATA[intermediateCapex]]></Name>
-					<X>-220</X><Y>510</Y>
+					<X>-250</X><Y>200</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8912,7 +9029,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300016</Id>
 					<Name><![CDATA[intermediateOpex]]></Name>
-					<X>-220</X><Y>540</Y>
+					<X>-250</X><Y>230</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8927,7 +9044,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>9970000000001</Id>
 					<Name><![CDATA[recyclingCapex]]></Name>
-					<X>-220</X><Y>570</Y>
+					<X>-250</X><Y>260</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8942,7 +9059,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>9970000000002</Id>
 					<Name><![CDATA[recyclingOpexAnnual]]></Name>
-					<X>-220</X><Y>600</Y>
+					<X>-250</X><Y>290</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8957,7 +9074,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300017</Id>
 					<Name><![CDATA[truckCount]]></Name>
-					<X>-220</X><Y>570</Y>
+					<X>-880</X><Y>1050</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8972,7 +9089,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300018</Id>
 					<Name><![CDATA[intermediateLat]]></Name>
-					<X>-220</X><Y>600</Y>
+					<X>-880</X><Y>990</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -8987,7 +9104,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300019</Id>
 					<Name><![CDATA[intermediateLon]]></Name>
-					<X>-220</X><Y>630</Y>
+					<X>-880</X><Y>1020</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9002,7 +9119,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300020</Id>
 					<Name><![CDATA[deltaGWP_IS_vs_noIS]]></Name>
-					<X>-220</X><Y>660</Y>
+					<X>-600</X><Y>200</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9017,7 +9134,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300021</Id>
 					<Name><![CDATA[deltaHTP_IS_vs_noIS]]></Name>
-					<X>-220</X><Y>690</Y>
+					<X>-600</X><Y>230</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9032,7 +9149,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300022</Id>
 					<Name><![CDATA[deltaLUP_IS_vs_noIS]]></Name>
-					<X>-220</X><Y>720</Y>
+					<X>-600</X><Y>260</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9047,7 +9164,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>8800000300023</Id>
 					<Name><![CDATA[deltaCED_IS_vs_noIS]]></Name>
-					<X>-220</X><Y>750</Y>
+					<X>-600</X><Y>290</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9063,7 +9180,7 @@ else return black;]]></Body>
 					<Id>9002000000001</Id>
 					<Name><![CDATA[bookingLog]]></Name>
 					<Description><![CDATA[Booking log: each entry is Object[]{simDay, providerIdx, material, qty_t, result, tierInfo, distKm, transportCost_SGD}. Written to Excel on simulation end.]]></Description>
-					<X>370</X><Y>450</Y>
+					<X>950</X><Y>0</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>false</PresentationFlag>
@@ -9079,7 +9196,7 @@ else return black;]]></Body>
 					<Id>9002000000002</Id>
 					<Name><![CDATA[totalBookingsReceived]]></Name>
 					<Description><![CDATA[Per-material booking counter: total received (index = matIdx).]]></Description>
-					<X>-50</X><Y>1120</Y>
+					<X>950</X><Y>140</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>false</PresentationFlag>
@@ -9095,7 +9212,7 @@ else return black;]]></Body>
 					<Id>9002000000003</Id>
 					<Name><![CDATA[totalBookingsAccepted]]></Name>
 					<Description><![CDATA[Per-material booking counter: total accepted (index = matIdx).]]></Description>
-					<X>-50</X><Y>1060</Y>
+					<X>950</X><Y>170</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>false</PresentationFlag>
@@ -9111,7 +9228,7 @@ else return black;]]></Body>
 					<Id>9002000000004</Id>
 					<Name><![CDATA[totalBookingsRejected]]></Name>
 					<Description><![CDATA[Per-material booking counter: total rejected (index = matIdx).]]></Description>
-					<X>-50</X><Y>1090</Y>
+					<X>950</X><Y>200</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>false</PresentationFlag>
@@ -9127,7 +9244,7 @@ else return black;]]></Body>
 					<Id>9003000000003</Id>
 					<Name><![CDATA[netOperatingResult]]></Name>
 					<Description><![CDATA[Intermediate net operating result: totalRevenues − totalCosts. Computed annually in annualFinancialUpdate. Represents the Intermediate agent's lifetime net balance.]]></Description>
-					<X>60</X><Y>1170</Y>
+					<X>-250</X><Y>150</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9142,7 +9259,7 @@ else return black;]]></Body>
 				<Variable Class="PlainVariable">
 					<Id>1774771884126</Id>
 					<Name><![CDATA[totalWasteReceived]]></Name>
-					<X>680</X><Y>-50</Y>
+					<X>-880</X><Y>850</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9158,7 +9275,7 @@ else return black;]]></Body>
 					<Id>8800000301001</Id>
 					<Name><![CDATA[WasteToBeBurned]]></Name>
 					<Description><![CDATA[Accumulated non-IS waste (t) awaiting incineration in primary combustion chamber. Filled by receiveLandfillWaste() when landfill trucks arrive; drained weekly by combustion DES.]]></Description>
-					<X>-220</X><Y>990</Y>
+					<X>-880</X><Y>880</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9174,7 +9291,7 @@ else return black;]]></Body>
 					<Id>8800000301002</Id>
 					<Name><![CDATA[WasteBurned]]></Name>
 					<Description><![CDATA[Cumulative waste (t) incinerated over entire simulation. Incremented after each combustion cycle completes.]]></Description>
-					<X>-220</X><Y>1020</Y>
+					<X>-880</X><Y>910</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9190,7 +9307,7 @@ else return black;]]></Body>
 					<Id>8800000301004</Id>
 					<Name><![CDATA[burningThreshold_t]]></Name>
 					<Description><![CDATA[Minimum accumulated waste (t) in WasteToBeBurned before a combustion cycle is triggered. Read from Intermediate sheet row 11. Default 20 t.]]></Description>
-					<X>60</X><Y>1020</Y>
+					<X>-880</X><Y>940</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9206,7 +9323,7 @@ else return black;]]></Body>
 					<Id>8800000301005</Id>
 					<Name><![CDATA[emissionFactor_CO2_kgPerKg]]></Name>
 					<Description><![CDATA[Direct CO2 emission factor (kg CO2 per kg waste burned). Read from Intermediate sheet row 12. Default 0.95 (IPCC 2006 MSW incineration).]]></Description>
-					<X>60</X><Y>1050</Y>
+					<X>-600</X><Y>560</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9222,7 +9339,7 @@ else return black;]]></Body>
 					<Id>8800000301006</Id>
 					<Name><![CDATA[emissionFactor_CO_kgPerKg]]></Name>
 					<Description><![CDATA[Carbon monoxide emission factor (kg CO per kg waste burned). Read from Intermediate sheet row 13. Default 0.001 (EU IED empirical estimate).]]></Description>
-					<X>330</X><Y>1080</Y>
+					<X>-600</X><Y>590</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9238,7 +9355,7 @@ else return black;]]></Body>
 					<Id>8800000301007</Id>
 					<Name><![CDATA[emissionFactor_NOx_kgPerKg]]></Name>
 					<Description><![CDATA[NOx emission factor (kg NOx as NO2 per kg waste burned). Read from Intermediate sheet row 14. Default 0.0015 (EU IED / Arena 2012).]]></Description>
-					<X>330</X><Y>1110</Y>
+					<X>-600</X><Y>620</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9254,7 +9371,7 @@ else return black;]]></Body>
 					<Id>8800000301008</Id>
 					<Name><![CDATA[totalCO2EmittedKg]]></Name>
 					<Description><![CDATA[Cumulative CO2 emitted (kg) from all incineration cycles over the simulation. Incremented in combustionSlagEvent action.]]></Description>
-					<X>60</X><Y>1140</Y>
+					<X>-600</X><Y>650</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9270,7 +9387,7 @@ else return black;]]></Body>
 					<Id>8800000301009</Id>
 					<Name><![CDATA[totalCOEmittedKg]]></Name>
 					<Description><![CDATA[Cumulative CO emitted (kg) from all incineration cycles. Incremented in combustionSlagEvent action.]]></Description>
-					<X>330</X><Y>1140</Y>
+					<X>-600</X><Y>680</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9286,7 +9403,7 @@ else return black;]]></Body>
 					<Id>8800000301010</Id>
 					<Name><![CDATA[totalNOxEmittedKg]]></Name>
 					<Description><![CDATA[Cumulative NOx emitted (kg as NO2) from all incineration cycles. Incremented in combustionSlagEvent action.]]></Description>
-					<X>60</X><Y>1200</Y>
+					<X>-600</X><Y>710</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9301,7 +9418,7 @@ else return black;]]></Body>
 				<Variable Class="Parameter">
 					<Id>1773637910064</Id>
 					<Name><![CDATA[providerIncentive]]></Name>
-					<X>-220</X><Y>960</Y>
+					<X>-250</X><Y>330</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9327,7 +9444,7 @@ else return black;]]></Body>
 					<Id>9982000020</Id>
 					<Name><![CDATA[recyc_pendingRaw]]></Name>
 					<Description><![CDATA[Staging buffer (t per material) for recycling DES visualization. Loaded by recyclingProcessing() before recyclStart.inject().]]></Description>
-					<X>-420</X><Y>1250</Y>
+					<X>950</X><Y>250</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9343,7 +9460,7 @@ else return black;]]></Body>
 					<Id>9982000022</Id>
 					<Name><![CDATA[recyc_pendingProcessWaste]]></Name>
 					<Description><![CDATA[Per-material process waste (t) staged for process waste DES visualization.]]></Description>
-					<X>-420</X><Y>1270</Y>
+					<X>950</X><Y>280</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9359,7 +9476,7 @@ else return black;]]></Body>
 					<Id>9983000020</Id>
 					<Name><![CDATA[pw_pendingQty]]></Name>
 					<Description><![CDATA[Total process waste (t) queued for process waste DES. Sum of recyc_pendingProcessWaste[].]]></Description>
-					<X>-420</X><Y>1290</Y>
+					<X>950</X><Y>310</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9375,7 +9492,7 @@ else return black;]]></Body>
 					<Id>9984000001</Id>
 					<Name><![CDATA[tierFillLog]]></Name>
 					<Description><![CDATA[Rolling log of tier fill snapshots. Updated on every acceptBooking/acceptResidue success and before recycling reset.]]></Description>
-					<X>-420</X><Y>1310</Y>
+					<X>950</X><Y>30</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9391,7 +9508,7 @@ else return black;]]></Body>
 					<Id>9985000001</Id>
 					<Name><![CDATA[residueLog]]></Name>
 					<Description><![CDATA[Rolling log of residue return events at Intermediate (acceptResidue accepted/rejected). Displayed in Level.]]></Description>
-					<X>-420</X><Y>1330</Y>
+					<X>950</X><Y>60</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9409,7 +9526,7 @@ else return black;]]></Body>
 					<Id>9987000001</Id>
 					<Name><![CDATA[gwpFactor_drying_kgCO2eqPerKg]]></Name>
 					<Description><![CDATA[GWP emission factor for waste drying stage (kg CO2-eq / kg waste). Read from Intermediate sheet B15. Update from ecoinvent/IPCC. Default 0.05 kg CO2-eq/kg (ILLUSTRATIVE).]]></Description>
-					<X>-420</X><Y>1350</Y>
+					<X>-600</X><Y>370</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9425,7 +9542,7 @@ else return black;]]></Body>
 					<Id>9987000002</Id>
 					<Name><![CDATA[gwpFactor_thermalDecomp_kgCO2eqPerKg]]></Name>
 					<Description><![CDATA[GWP emission factor for thermal decomposition stage (kg CO2-eq / kg waste). Read from Intermediate sheet B16. Default 0.80 (ILLUSTRATIVE).]]></Description>
-					<X>-420</X><Y>1370</Y>
+					<X>-600</X><Y>400</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9441,7 +9558,7 @@ else return black;]]></Body>
 					<Id>9987000003</Id>
 					<Name><![CDATA[gwpFactor_slagFormation_kgCO2eqPerKg]]></Name>
 					<Description><![CDATA[GWP emission factor for slag/ash formation stage (kg CO2-eq / kg waste). Read from Intermediate sheet B17. Default 0.02 (ILLUSTRATIVE).]]></Description>
-					<X>-420</X><Y>1390</Y>
+					<X>-600</X><Y>430</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9459,7 +9576,7 @@ else return black;]]></Body>
 					<Id>9983000021</Id>
 					<Name><![CDATA[pw_pendingGWP]]></Name>
 					<Description><![CDATA[Staged GWP (kg CO2-eq) for current process-waste DES cycle. Set before pwStart.inject(); applied in pwSink.onEnter.]]></Description>
-					<X>-420</X><Y>1410</Y>
+					<X>950</X><Y>340</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9475,7 +9592,7 @@ else return black;]]></Body>
 					<Id>9983000022</Id>
 					<Name><![CDATA[pw_pendingHTP]]></Name>
 					<Description><![CDATA[Staged HTP (kg 1,4-DCB-eq) for current process-waste DES cycle. Applied in pwSink.onEnter.]]></Description>
-					<X>-420</X><Y>1430</Y>
+					<X>950</X><Y>370</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9491,7 +9608,7 @@ else return black;]]></Body>
 					<Id>9983000023</Id>
 					<Name><![CDATA[pw_pendingLUP]]></Name>
 					<Description><![CDATA[Staged LUP (m2a crop-eq) for current process-waste DES cycle. Applied in pwSink.onEnter.]]></Description>
-					<X>-420</X><Y>1450</Y>
+					<X>950</X><Y>400</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9507,7 +9624,7 @@ else return black;]]></Body>
 					<Id>9983000024</Id>
 					<Name><![CDATA[pw_pendingCED]]></Name>
 					<Description><![CDATA[Staged CED (MJ) for current process-waste DES cycle. Applied in pwSink.onEnter.]]></Description>
-					<X>-420</X><Y>1470</Y>
+					<X>950</X><Y>430</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9525,7 +9642,7 @@ else return black;]]></Body>
 					<Id>9987000010</Id>
 					<Name><![CDATA[GWPActualIncineration]]></Name>
 					<Description><![CDATA[Cumulative LCA GWP (kg CO2-eq) from all incineration cycles at BIWASE. Computed per-stage in CombustionSink.onEnter (drying + thermalDecomp + slagFormation). Facility-level attribution separate from Provider.GWPActualProcess.]]></Description>
-					<X>-420</X><Y>1490</Y>
+					<X>-600</X><Y>340</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9542,7 +9659,7 @@ else return black;]]></Body>
 					<Id>9988000001</Id>
 					<Name><![CDATA[htpFactor_incineration_CTUhPerKg]]></Name>
 					<Description><![CDATA[HTP emission factor for incineration at BIWASE (CTUh / kg waste). Read from Intermediate sheet B18. ILLUSTRATIVE — replace with ecoinvent 3.9 'treatment of municipal solid waste by incineration' (RoW) before thesis submission.]]></Description>
-					<X>-420</X><Y>1510</Y>
+					<X>-600</X><Y>460</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9558,7 +9675,7 @@ else return black;]]></Body>
 					<Id>9988000002</Id>
 					<Name><![CDATA[lupFactor_incineration_m2yrPerKg]]></Name>
 					<Description><![CDATA[LUP emission factor for incineration at BIWASE (m2yr / kg waste). Read from Intermediate sheet B19. ILLUSTRATIVE — replace with ecoinvent 3.9 before thesis submission.]]></Description>
-					<X>-420</X><Y>1530</Y>
+					<X>-600</X><Y>490</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9574,7 +9691,7 @@ else return black;]]></Body>
 					<Id>9988000003</Id>
 					<Name><![CDATA[cedFactor_incineration_MJPerKg]]></Name>
 					<Description><![CDATA[CED emission factor for incineration at BIWASE (MJ / kg waste). Read from Intermediate sheet B20. ILLUSTRATIVE — replace with ecoinvent 3.9 before thesis submission.]]></Description>
-					<X>-420</X><Y>1550</Y>
+					<X>-600</X><Y>520</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -9586,7 +9703,23 @@ else return black;]]></Body>
 						</InitialValue>
 					</Properties>
 				</Variable>
-			</Variables>
+			<Variable Class="PlainVariable">
+    <Id>9989000001</Id>
+    <Name><![CDATA[recyclingBatchLog]]></Name>
+    <Description><![CDATA[Rolling log of completed recycling DES batches. One entry per weekly cycle with timestamp, mass breakdown, and provider summary.]]></Description>
+    <X>950</X><Y>90</Y>
+    <Label><X>10</X><Y>0</Y></Label>
+    <PublicFlag>false</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>true</ShowLabel>
+    <Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+        <Type><![CDATA[java.util.ArrayList]]></Type>
+        <InitialValue Class="CodeValue">
+            <Code><![CDATA[new java.util.ArrayList<String>()]]></Code>
+        </InitialValue>
+    </Properties>
+</Variable>
+</Variables>
 			<Connectors>
 				<Connector>
 					<Id>1774865703862</Id>
@@ -9985,6 +10118,423 @@ else return black;]]></Body>
 						<Point><X>-45</X><Y>0</Y></Point>
 					</Points>
 				</Connector>
+				<Connector>
+					<Id>9985100001</Id>
+					<Name><![CDATA[conn_paperBale]]></Name>
+					<X>480</X><Y>630</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[paper_Baling]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[paper_Start]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9985100002</Id>
+					<Name><![CDATA[conn_paperLoad]]></Name>
+					<X>565</X><Y>630</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[paper_Loading]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[paper_Baling]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9985100003</Id>
+					<Name><![CDATA[conn_paperSink]]></Name>
+					<X>650</X><Y>630</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[paper_Sink]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[paper_Loading]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9986100001</Id>
+					<Name><![CDATA[conn_feSort]]></Name>
+					<X>480</X><Y>720</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_Sorting]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_Start]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9986100002</Id>
+					<Name><![CDATA[conn_feGrade]]></Name>
+					<X>565</X><Y>720</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_Grading]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_Sorting]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9986100003</Id>
+					<Name><![CDATA[conn_fePreTrt]]></Name>
+					<X>650</X><Y>720</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_PreTreatment]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_Grading]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9986100004</Id>
+					<Name><![CDATA[conn_feSink]]></Name>
+					<X>735</X><Y>720</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_Sink]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[fe_PreTreatment]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9987100001</Id>
+					<Name><![CDATA[conn_textCut]]></Name>
+					<X>480</X><Y>810</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[text_CutShredding]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[text_Start]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9987100002</Id>
+					<Name><![CDATA[conn_textFibre]]></Name>
+					<X>565</X><Y>810</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[text_FibreReprocessing]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[text_CutShredding]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9987100003</Id>
+					<Name><![CDATA[conn_textSink]]></Name>
+					<X>650</X><Y>810</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[text_Sink]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[text_FibreReprocessing]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9988100001</Id>
+					<Name><![CDATA[conn_nfeSort]]></Name>
+					<X>480</X><Y>900</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[nfe_Sorting]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[nfe_Start]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9988100002</Id>
+					<Name><![CDATA[conn_nfeSeg]]></Name>
+					<X>565</X><Y>900</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[nfe_Segregation]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[nfe_Sorting]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>				<Connector>
+					<Id>9988100003</Id>
+					<Name><![CDATA[conn_nfeSink]]></Name>
+					<X>650</X><Y>900</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[nfe_Sink]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[nfe_Segregation]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>
 			</Connectors>
 			<StatechartElements>
 				<StatechartElement Class="State" ParentState="ROOT_NODE">
@@ -10341,7 +10891,7 @@ else return black;]]></Body>
 					<Id>8800000300100</Id>
 					<Name><![CDATA[recyclingProcessingEvent]]></Name>
 					<Description><![CDATA[Weekly processing of raw waste buffer into recycled stock]]></Description>
-					<X>-220</X><Y>810</Y>
+					<X>-880</X><Y>1080</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -10373,7 +10923,7 @@ else return black;]]></Body>
 				<Event>
 					<Id>1773636224181</Id>
 					<Name><![CDATA[maintenanceElseEvent]]></Name>
-					<X>80</X><Y>520</Y>
+					<X>250</X><Y>520</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -10479,7 +11029,7 @@ else return black;]]></Body>
 					<Id>8800000302001</Id>
 					<Name><![CDATA[weeklyLandfillBurnEvent]]></Name>
 					<Description><![CDATA[Weekly trigger for incineration DES. Fires every 7 days (offset 6.5d so it runs after recyclingProcessingEvent). If WasteToBeBurned > burningThreshold_t and no combustion is in progress, starts the DES chain: WasteDrying → Gasification → SlagFormation.]]></Description>
-					<X>60</X><Y>1230</Y>
+					<X>-880</X><Y>1100</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -10524,7 +11074,7 @@ if (WasteToBeBurned >= burningThreshold_t) {
 					<Name><![CDATA[acceptBooking]]></Name>
 					<Description><![CDATA[Evaluate if Intermediate can accept waste from a Provider. 2-tier storage: Tier 1 = guaranteed per-material slots, Tier 2 = shared flexible pool.
 function updates storage counters and returns a boolean.]]></Description>
-					<X>-220</X><Y>860</Y>
+					<X>-880</X><Y>1140</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -10717,7 +11267,7 @@ return false;]]></Body>
 					<Id>8800000300201</Id>
 					<Name><![CDATA[recyclingProcessing]]></Name>
 					<Description><![CDATA[Monthly processing: apply conversionEfficiency per material to convert raw waste buffer into recycled stock. Process waste goes to EndOfLife.]]></Description>
-					<X>-220</X><Y>910</Y>
+					<X>-880</X><Y>1180</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -10736,12 +11286,26 @@ for (int m = 0; m < nMat; m++) {
     // Add converted material to saleable stock
     currentStockPerMat[m] += converted;
 
-    // Process waste → EndOfLife
+    // ── Process waste fate split (Consensus-validated, 2026-04-02) ──────────
+    // pw fate: material-specific arrays (Consensus-validated 2026-04-02)
     if (processWaste > 0) {
+        double pw_toLandfill     = processWaste * main.pw_landfillSharePerMat[m];
+        double pw_toIncineration = processWaste * main.pw_incinerationSharePerMat[m];
+        double pw_toOther        = processWaste * (1.0 - main.pw_landfillSharePerMat[m] - main.pw_incinerationSharePerMat[m]);
+
+        // Bottom ash and fly ash from incinerated fraction
+        double bottomAshMass = pw_toIncineration * main.bottomAsh_massFraction;
+        double flyAshMass    = pw_toIncineration * main.flyAsh_massFraction;
+
+        // Financial: landfill cost applied to full process waste (ash disposal treated as included)
         double pwCost = processWaste * main.costLandfillPerMat[m];
         main.intermediate.totalWasteReceived += processWaste;
         this.financialBalance -= pwCost;
         this.totalCosts += pwCost;
+
+        // Trace log for mass balance verification
+        traceln(String.format("CE3.0 recyclingPW m=%d: pw=%.3ft → LF=%.3ft incin=%.3ft other=%.3ft | BA=%.3ft FA=%.3ft",
+            m, processWaste, pw_toLandfill, pw_toIncineration, pw_toOther, bottomAshMass, flyAshMass));
         main.landfillCostPerMat[m] += pwCost;
 
         // Transport: EoL facility is co-located with BIWASE (dist = 0) — no transport cost or GWP.
@@ -10788,7 +11352,26 @@ for (int _m = 0; _m < nMat; _m++) {
     pw_pendingLUP += _kgPW * main.LUPWasteToLandfill[_m];
     pw_pendingCED += _kgPW * main.CEDWasteToLandfill[_m];
 }
-recyclStart.inject();
+// ── Batch log entry ───────────────────────────────────────────────────
+{
+    StringBuilder _batchLine = new StringBuilder();
+    _batchLine.append(String.format("Day%6.1f | RECYCL-BATCH |", time(DAY)));
+    double _totalRaw = 0;
+    for (int _m = 0; _m < nMat; _m++) _totalRaw += recyc_pendingRaw[_m];
+    _batchLine.append(String.format(" %.3ft total |", _totalRaw));
+    for (int _m = 0; _m < nMat; _m++) {
+        if (recyc_pendingRaw[_m] > 0)
+            _batchLine.append(String.format(" %s:%.2ft", MaterialType.values()[_m], recyc_pendingRaw[_m]));
+    }
+    recyclingBatchLog.add(_batchLine.toString());
+}
+// Per-material DES visualization chains — thesis process steps [63-71]
+// Inject only for materials with pending batch (recyc_pendingRaw[m] > 0)
+if (recyc_pendingRaw[0] > 0) recyclStart.inject();    // [0] PLASTIC_SCRAP: Shred→Wash→Sep→Extrude [63]
+if (recyc_pendingRaw[1] > 0) paper_Start.inject();    // [1] PAPER_WASTE: Bale→Load [64,65]
+if (recyc_pendingRaw[2] > 0) fe_Start.inject();       // [2] FERROUS_METAL: Sort→Grade→PreTreat [66,67]
+if (recyc_pendingRaw[3] > 0) text_Start.inject();     // [3] TEXTILE_WASTE: CutShred→FibreReprocess [68,69]
+if (recyc_pendingRaw[4] > 0) nfe_Start.inject();      // [4] NON_FERROUS_METAL: Sort→Segregate [70,71]
 if (pw_pendingQty > 0) pwStart.inject();]]></Body>
 				</Function>
 				<Function AccessType="public" StaticFunction="false">
@@ -10797,7 +11380,7 @@ if (pw_pendingQty > 0) pwStart.inject();]]></Body>
 					<Id>9905000000001</Id>
 					<Name><![CDATA[fulfillDemand]]></Name>
 					<Description><![CDATA[Attempt to deliver requested quantity of a material to a Receiver from processed stock. Returns actual tonnes delivered (may be less than requested). Intermediate bears transport to Receiver; Receiver pays priceSecondary to Intermediate.]]></Description>
-					<X>60</X><Y>1080</Y>
+					<X>-880</X><Y>1220</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -10868,7 +11451,7 @@ return delivered;]]></Body>
 					<Id>9905000000002</Id>
 					<Name><![CDATA[acceptResidue]]></Name>
 					<Description><![CDATA[Accept processing residue from a Receiver back into Intermediate storage. Uses same 2-tier logic as acceptBooking() but takes coordinates instead of a Provider reference. Transport is already borne by the Receiver before this call.]]></Description>
-					<X>60</X><Y>1110</Y>
+					<X>-880</X><Y>1260</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -10958,7 +11541,7 @@ return false;]]></Body>
 					<Id>8800000303001</Id>
 					<Name><![CDATA[receiveLandfillWaste]]></Name>
 					<Description><![CDATA[Called by a GarbageTruck on arrival at Intermediate after a non-IS landfill run. Adds payload to WasteToBeBurned buffer. The weekly combustionDES will incinerate it.]]></Description>
-					<X>60</X><Y>1380</Y>
+					<X>-880</X><Y>1300</Y>
 					<Label><X>10</X><Y>0</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -11689,12 +12272,10 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter>
 						<Name><![CDATA[onEnter]]></Name>
 						<Value Class="CodeValue">
-							<Code><![CDATA[// STEP 1 — SHREDDING  (mechanical size reduction)
-// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
-//   "treatment of plastic waste, via mechanical recycling" → size reduction subprocess (RoW or CN geography)
-// Add per-step EF to Intermediate Excel sheet (rows TBD) for GWP, HTP, CED, LUP.
-// LCA computation: recyclQty_kg × efShredding_GWP_kgCO2eqPerKg → GWPActualProcess
-// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+							<Code><![CDATA[// PLASTIC_SCRAP — STEP 1: SHREDDING (mechanical size reduction)
+// Source: thesis ref [63] — plastic scrap shredded to <25 mm flakes for washing efficiency.
+// Industrial granulator / shredder; energy ≈ 0.15-0.25 kWh/kg. Step produces size-reduced flakes.
+// ⚠ LCA: per-step GWP EF needed — ecoinvent 3.9 "treatment of plastic waste, via mechanical recycling" (RoW/CN).]]></Code>
 						</Value>
 					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
@@ -11720,7 +12301,7 @@ send("CombustionFinished", this);]]></Code>
 					<Id>9982001003</Id>
 					<Name><![CDATA[recyclWashing]]></Name>
 					<X>565</X><Y>440</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -11756,12 +12337,10 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter>
 						<Name><![CDATA[onEnter]]></Name>
 						<Value Class="CodeValue">
-							<Code><![CDATA[// STEP 2 — WASHING  (aqueous cleaning / contaminant removal)
-// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
-//   "treatment of plastic waste, via mechanical recycling" → washing subprocess (RoW or CN geography)
-// Add per-step EF to Intermediate Excel sheet for GWP, HTP, CED, LUP.
-// Note: HTP may be significant at this step (detergent / surfactant use).
-// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+							<Code><![CDATA[// PLASTIC_SCRAP — STEP 2: WASHING (aqueous cleaning / contaminant removal)
+// Source: thesis ref [63] — hot-water washing removes dirt, adhesives, labels. Contamination < 2%.
+// Water consumption ≈ 0.5-1 m3/t; detergent use → HTP consideration.
+// ⚠ LCA: ecoinvent 3.9 "treatment of plastic waste, via mechanical recycling" → washing subprocess (RoW/CN).]]></Code>
 						</Value>
 					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
@@ -11823,11 +12402,10 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter>
 						<Name><![CDATA[onEnter]]></Name>
 						<Value Class="CodeValue">
-							<Code><![CDATA[// STEP 3 — SEPARATION  (density / flotation sorting by polymer type)
-// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
-//   "treatment of plastic waste, via mechanical recycling" → separation subprocess (RoW or CN geography)
-// Add per-step EF to Intermediate Excel sheet for GWP, HTP, CED, LUP.
-// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+							<Code><![CDATA[// PLASTIC_SCRAP — STEP 3: SEPARATION (density / flotation sorting by polymer type)
+// Source: thesis ref [63] — float/sink separation in water tank separates PP/PE (float) from PET/PVC (sink).
+// Output: polymer-pure flake streams; mixed rejects → process waste (pw_landfillSharePerMat[0]=0.70).
+// ⚠ LCA: ecoinvent 3.9 "treatment of plastic waste, via mechanical recycling" → separation subprocess (RoW/CN).]]></Code>
 						</Value>
 					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
@@ -11853,7 +12431,7 @@ send("CombustionFinished", this);]]></Code>
 					<Id>9982001005</Id>
 					<Name><![CDATA[recyclExtrusion]]></Name>
 					<X>735</X><Y>440</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -11889,13 +12467,11 @@ send("CombustionFinished", this);]]></Code>
 						<Parameter>
 						<Name><![CDATA[onEnter]]></Name>
 						<Value Class="CodeValue">
-							<Code><![CDATA[// STEP 4 — EXTRUSION  (melt processing → recycled pellets / regranulate)
-// ⚠ EMISSION FACTOR REQUIRED — ecoinvent 3.9 query:
-//   "treatment of plastic waste, via mechanical recycling" → pelletising / extrusion subprocess (RoW or CN geography)
-// Add per-step EF to Intermediate Excel sheet for GWP, HTP, CED, LUP.
-// Note: highest energy step (~50 % of total process energy).
-// Consider system-expansion credit for avoided virgin polymer production — thesis methodology choice.
-// ILLUSTRATIVE — replace with validated ecoinvent 3.9 values before thesis submission.]]></Code>
+							<Code><![CDATA[// PLASTIC_SCRAP — STEP 4: EXTRUSION (melt processing → recycled pellets / regranulate)
+// Source: thesis ref [63] — dried clean flakes extruded and pelletised. Output = secondary plastic pellets.
+// Highest energy step (~50% of total process energy ≈ 0.3-0.5 kWh/kg).
+// ⚠ LCA: ecoinvent 3.9 "treatment of plastic waste, via mechanical recycling" → pelletising/extrusion (RoW/CN).
+// Thesis methodology choice: system expansion credit for avoided virgin polymer production.]]></Code>
 						</Value>
 					</Parameter>
 						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
@@ -12113,7 +12689,7 @@ send("CombustionFinished", this);]]></Code>
 					<Id>9983001003</Id>
 					<Name><![CDATA[pwLandfillDeposit]]></Name>
 					<X>565</X><Y>530</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -12209,7 +12785,1113 @@ send("CombustionFinished", this);]]></Code>
 					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
 					<QuantityColumn></QuantityColumn>
 				</EmbeddedObject>
-			</EmbeddedObjects>
+
+				<EmbeddedObject>
+					<Id>9985001001</Id>
+					<Name><![CDATA[paper_Start]]></Name>
+					<X>410</X><Y>630</Y>
+					<Label><X>-70</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Source]]></ClassName>
+							<ItemName><![CDATA[1412336242928]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[arrivalType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rate]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[interarrivalTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[36500]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[firstArrivalMode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[firstArrivalTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[modifyRate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateExpression]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[setAgentParametersFromDB]]></Name></Parameter>
+						<Parameter><Name><![CDATA[databaseTable]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalDate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[multipleEntitiesPerArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[entitiesPerArrival]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[limitArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[maxArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[0]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[locationType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationX]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationY]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationZ]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLatitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLongitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationGeoPlaceName]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationXYZInNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLevel]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationAttractor]]></Name></Parameter>
+						<Parameter><Name><![CDATA[speed]]></Name></Parameter>
+						<Parameter><Name><![CDATA[newEntity]]></Name></Parameter>
+						<Parameter><Name><![CDATA[changeDimensions]]></Name></Parameter>
+						<Parameter><Name><![CDATA[length]]></Name></Parameter>
+						<Parameter><Name><![CDATA[width]]></Name></Parameter>
+						<Parameter><Name><![CDATA[height]]></Name></Parameter>
+						<Parameter><Name><![CDATA[enableCustomStartTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[startTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[addToCustomPopulation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[population]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[discardHangingEntities]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onBeforeArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onDiscard]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9985001101</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9985001002</Id>
+					<Name><![CDATA[paper_Baling]]></Name>
+					<X>480</X><Y>630</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(1,2,3)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// PAPER_WASTE — STEP 1: BALING (mechanical compaction for transport)
+// Source: thesis ref [64] — baling reduces volume 8:1 to 12:1; standard step before transport to paper mill.
+// Delay 1-3 h per batch. BIWASE consolidates paper from providers for delivery.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9985001102</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9985001003</Id>
+					<Name><![CDATA[paper_Loading]]></Name>
+					<X>565</X><Y>630</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(0.5,1,1.5)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// PAPER_WASTE — STEP 2: LOADING AND TRANSPORT PREPARATION
+// Source: thesis ref [65] — prepared bales are loaded onto trucks for delivery to receiving paper mill.
+// Pulping / repulping occurs at Receiver, not at BIWASE hub. No further processing here.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9985001103</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9985001004</Id>
+					<Name><![CDATA[paper_Sink]]></Name>
+					<X>650</X><Y>630</Y>
+					<Label><X>-20</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Sink]]></ClassName>
+							<ItemName><![CDATA[1412336242929]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[onEnter]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[// PAPER_WASTE DES chain complete. Accounting done in recyclingProcessing(). Visualization only.
+traceln(String.format("[DES-PAPER_WASTE t=%.1fd] processing batch complete", time(DAY)));]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[destroyEntity]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9985001104</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9986001001</Id>
+					<Name><![CDATA[fe_Start]]></Name>
+					<X>410</X><Y>720</Y>
+					<Label><X>-70</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Source]]></ClassName>
+							<ItemName><![CDATA[1412336242928]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[arrivalType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rate]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[interarrivalTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[36500]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[firstArrivalMode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[firstArrivalTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[modifyRate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateExpression]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[setAgentParametersFromDB]]></Name></Parameter>
+						<Parameter><Name><![CDATA[databaseTable]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalDate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[multipleEntitiesPerArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[entitiesPerArrival]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[limitArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[maxArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[0]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[locationType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationX]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationY]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationZ]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLatitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLongitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationGeoPlaceName]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationXYZInNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLevel]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationAttractor]]></Name></Parameter>
+						<Parameter><Name><![CDATA[speed]]></Name></Parameter>
+						<Parameter><Name><![CDATA[newEntity]]></Name></Parameter>
+						<Parameter><Name><![CDATA[changeDimensions]]></Name></Parameter>
+						<Parameter><Name><![CDATA[length]]></Name></Parameter>
+						<Parameter><Name><![CDATA[width]]></Name></Parameter>
+						<Parameter><Name><![CDATA[height]]></Name></Parameter>
+						<Parameter><Name><![CDATA[enableCustomStartTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[startTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[addToCustomPopulation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[population]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[discardHangingEntities]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onBeforeArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onDiscard]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9986001101</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9986001002</Id>
+					<Name><![CDATA[fe_Sorting]]></Name>
+					<X>480</X><Y>720</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(1,2,3)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// FERROUS_METAL — STEP 1: SORTING (manual + magnetic separation by grade)
+// Source: thesis ref [66] — ferrous scrap sorted into categories (heavy melting, shredded, cast iron).
+// Magnetic drum separator used; highly efficient for clean industrial scrap from VSIP1.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9986001102</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9986001003</Id>
+					<Name><![CDATA[fe_Grading]]></Name>
+					<X>565</X><Y>720</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(0.5,1,1.5)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// FERROUS_METAL — STEP 2: GRADING (quality assessment per BS/ISO scrap grades)
+// Source: thesis ref [67] — graded lots are tagged and assigned to specific EAF or BOF buyers.
+// Visual inspection + basic chemical testing (carbon %, alloy content estimation).]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9986001103</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9986001004</Id>
+					<Name><![CDATA[fe_PreTreatment]]></Name>
+					<X>650</X><Y>720</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(1,2,3)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// FERROUS_METAL — STEP 3: PRE-TREATMENT (cutting, shearing to furnace-charge size)
+// Source: thesis ref [67] — oversize pieces sheared to <0.5 m for furnace charging.
+// No smelting at BIWASE hub; pre-treated scrap delivered to steel mill Receiver.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9986001104</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9986001005</Id>
+					<Name><![CDATA[fe_Sink]]></Name>
+					<X>735</X><Y>720</Y>
+					<Label><X>-20</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Sink]]></ClassName>
+							<ItemName><![CDATA[1412336242929]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[onEnter]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[// FERROUS_METAL DES chain complete. Accounting done in recyclingProcessing(). Visualization only.
+traceln(String.format("[DES-FERROUS_METAL t=%.1fd] processing batch complete", time(DAY)));]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[destroyEntity]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9986001105</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9987001001</Id>
+					<Name><![CDATA[text_Start]]></Name>
+					<X>410</X><Y>810</Y>
+					<Label><X>-70</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Source]]></ClassName>
+							<ItemName><![CDATA[1412336242928]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[arrivalType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rate]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[interarrivalTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[36500]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[firstArrivalMode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[firstArrivalTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[modifyRate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateExpression]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[setAgentParametersFromDB]]></Name></Parameter>
+						<Parameter><Name><![CDATA[databaseTable]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalDate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[multipleEntitiesPerArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[entitiesPerArrival]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[limitArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[maxArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[0]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[locationType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationX]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationY]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationZ]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLatitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLongitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationGeoPlaceName]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationXYZInNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLevel]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationAttractor]]></Name></Parameter>
+						<Parameter><Name><![CDATA[speed]]></Name></Parameter>
+						<Parameter><Name><![CDATA[newEntity]]></Name></Parameter>
+						<Parameter><Name><![CDATA[changeDimensions]]></Name></Parameter>
+						<Parameter><Name><![CDATA[length]]></Name></Parameter>
+						<Parameter><Name><![CDATA[width]]></Name></Parameter>
+						<Parameter><Name><![CDATA[height]]></Name></Parameter>
+						<Parameter><Name><![CDATA[enableCustomStartTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[startTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[addToCustomPopulation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[population]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[discardHangingEntities]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onBeforeArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onDiscard]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9987001101</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9987001002</Id>
+					<Name><![CDATA[text_CutShredding]]></Name>
+					<X>480</X><Y>810</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(1,3,5)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// TEXTILE_WASTE — STEP 1: CUTTING AND SHREDDING (size reduction)
+// Source: thesis ref [68] — post-industrial textile scrap cut and mechanically shredded into shoddy fibre.
+// Industrial shredder reduces fabric/garment waste to ~2 cm fibre tufts suitable for reprocessing.
+// Energy-intensive step; primary source of dust/particulate emission.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9987001102</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9987001003</Id>
+					<Name><![CDATA[text_FibreReprocessing]]></Name>
+					<X>565</X><Y>810</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(2,4,6)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// TEXTILE_WASTE — STEP 2: FIBRE REPROCESSING (garnetting / opening)
+// Source: thesis ref [69] — shoddy fibres opened and blended for reuse as non-woven fill, insulation, or mixed yarn.
+// Fibre quality limits: >30% synthetic → industrial wipers / padding applications.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9987001103</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9987001004</Id>
+					<Name><![CDATA[text_Sink]]></Name>
+					<X>650</X><Y>810</Y>
+					<Label><X>-20</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Sink]]></ClassName>
+							<ItemName><![CDATA[1412336242929]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[onEnter]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[// TEXTILE_WASTE DES chain complete. Accounting done in recyclingProcessing(). Visualization only.
+traceln(String.format("[DES-TEXTILE_WASTE t=%.1fd] processing batch complete", time(DAY)));]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[destroyEntity]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9987001104</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9988001001</Id>
+					<Name><![CDATA[nfe_Start]]></Name>
+					<X>410</X><Y>900</Y>
+					<Label><X>-70</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Source]]></ClassName>
+							<ItemName><![CDATA[1412336242928]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[arrivalType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rate]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[interarrivalTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[36500]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[firstArrivalMode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[firstArrivalTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[modifyRate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[rateExpression]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalSchedule]]></Name></Parameter>
+						<Parameter><Name><![CDATA[setAgentParametersFromDB]]></Name></Parameter>
+						<Parameter><Name><![CDATA[databaseTable]]></Name></Parameter>
+						<Parameter><Name><![CDATA[arrivalDate]]></Name></Parameter>
+						<Parameter><Name><![CDATA[multipleEntitiesPerArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[entitiesPerArrival]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[limitArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[maxArrivals]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[0]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[locationType]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationX]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationY]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationZ]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLatitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLongitude]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationGeoPlaceName]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationXYZInNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNetwork]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationLevel]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationNode]]></Name></Parameter>
+						<Parameter><Name><![CDATA[locationAttractor]]></Name></Parameter>
+						<Parameter><Name><![CDATA[speed]]></Name></Parameter>
+						<Parameter><Name><![CDATA[newEntity]]></Name></Parameter>
+						<Parameter><Name><![CDATA[changeDimensions]]></Name></Parameter>
+						<Parameter><Name><![CDATA[length]]></Name></Parameter>
+						<Parameter><Name><![CDATA[width]]></Name></Parameter>
+						<Parameter><Name><![CDATA[height]]></Name></Parameter>
+						<Parameter><Name><![CDATA[enableCustomStartTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[startTime]]></Name></Parameter>
+						<Parameter><Name><![CDATA[addToCustomPopulation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[population]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[discardHangingEntities]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onBeforeArrival]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onDiscard]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9988001101</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9988001002</Id>
+					<Name><![CDATA[nfe_Sorting]]></Name>
+					<X>480</X><Y>900</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(1,2,3)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// NON_FERROUS_METAL — STEP 1: SORTING BY METAL TYPE
+// Source: thesis ref [70] — visual/manual sorting of Al, Cu, Pb, Zn scrap into separate bins.
+// Eddy-current separator used for Al/Cu separation from mixed scrap streams.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9988001102</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9988001003</Id>
+					<Name><![CDATA[nfe_Segregation]]></Name>
+					<X>565</X><Y>900</Y>
+					<Label><X>-30</X><Y>64</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(0.5,1,2)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter>
+						<Name><![CDATA[onEnter]]></Name>
+						<Value Class="CodeValue">
+							<Code><![CDATA[// NON_FERROUS_METAL — STEP 2: SEGREGATION (XRF alloy verification)
+// Source: thesis ref [71] — XRF gun used for alloy-grade verification before lot assignment.
+// No metallurgical processing at BIWASE; pure non-ferrous scrap dispatched to smelter Receiver.]]></Code>
+						</Value>
+					</Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9988001103</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>				<EmbeddedObject>
+					<Id>9988001004</Id>
+					<Name><![CDATA[nfe_Sink]]></Name>
+					<X>650</X><Y>900</Y>
+					<Label><X>-20</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Sink]]></ClassName>
+							<ItemName><![CDATA[1412336242929]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[onEnter]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[// NON_FERROUS DES chain complete. Accounting done in recyclingProcessing(). Visualization only.
+traceln(String.format("[DES-NON_FERROUS t=%.1fd] processing batch complete", time(DAY)));]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[destroyEntity]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9988001104</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>
+						</EmbeddedObjects>
 
 			<Presentation>
 				<Level>
@@ -12882,10 +14564,174 @@ send("CombustionFinished", this);]]></Code>
 
 
 
-					<Text>
+					<Rectangle>
+    <Id>9990000001</Id>
+    <Name><![CDATA[rectLCA]]></Name>
+    <X>-620</X><Y>-20</Y>
+    <Label><X>10</X><Y>10</Y></Label>
+    <PublicFlag>true</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <ZHeight>10</ZHeight>
+    <LineWidth>1</LineWidth>
+    <LineColor>-8355712</LineColor>
+    <LineMaterial>null</LineMaterial>
+    <LineStyle>SOLID</LineStyle>
+    <Width>300</Width>
+    <Height>750</Height>
+    <Rotation>0.0</Rotation>
+    <FillColor>-1</FillColor>
+    <FillMaterial>null</FillMaterial>
+</Rectangle>
+<Text>
+    <Id>9990000011</Id>
+    <Name><![CDATA[rectLCA_label]]></Name>
+    <X>-610</X><Y>-35</Y>
+    <Label><X>10</X><Y>0</Y></Label>
+    <PublicFlag>false</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <Rotation>0.0</Rotation>
+    <FontSize>12</FontSize>
+    <Bold>true</Bold>
+    <Italic>false</Italic>
+    <Alignment>LEFT</Alignment>
+    <Color>-8355712</Color>
+    <TextCode><![CDATA["LCA / EMISSIONS"]]></TextCode>
+</Text>
+<Rectangle>
+    <Id>9990000002</Id>
+    <Name><![CDATA[rectFinancial]]></Name>
+    <X>-270</X><Y>-20</Y>
+    <Label><X>10</X><Y>10</Y></Label>
+    <PublicFlag>true</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <ZHeight>10</ZHeight>
+    <LineWidth>1</LineWidth>
+    <LineColor>-8355712</LineColor>
+    <LineMaterial>null</LineMaterial>
+    <LineStyle>SOLID</LineStyle>
+    <Width>200</Width>
+    <Height>370</Height>
+    <Rotation>0.0</Rotation>
+    <FillColor>-1</FillColor>
+    <FillMaterial>null</FillMaterial>
+</Rectangle>
+<Text>
+    <Id>9990000012</Id>
+    <Name><![CDATA[rectFinancial_label]]></Name>
+    <X>-260</X><Y>-35</Y>
+    <Label><X>10</X><Y>0</Y></Label>
+    <PublicFlag>false</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <Rotation>0.0</Rotation>
+    <FontSize>12</FontSize>
+    <Bold>true</Bold>
+    <Italic>false</Italic>
+    <Alignment>LEFT</Alignment>
+    <Color>-8355712</Color>
+    <TextCode><![CDATA["FINANCIAL"]]></TextCode>
+</Text>
+<Rectangle>
+    <Id>9990000003</Id>
+    <Name><![CDATA[rectStorage]]></Name>
+    <X>-900</X><Y>630</Y>
+    <Label><X>10</X><Y>10</Y></Label>
+    <PublicFlag>true</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <ZHeight>10</ZHeight>
+    <LineWidth>1</LineWidth>
+    <LineColor>-8355712</LineColor>
+    <LineMaterial>null</LineMaterial>
+    <LineStyle>SOLID</LineStyle>
+    <Width>250</Width>
+    <Height>700</Height>
+    <Rotation>0.0</Rotation>
+    <FillColor>-1</FillColor>
+    <FillMaterial>null</FillMaterial>
+</Rectangle>
+<Text>
+    <Id>9990000013</Id>
+    <Name><![CDATA[rectStorage_label]]></Name>
+    <X>-890</X><Y>615</Y>
+    <Label><X>10</X><Y>0</Y></Label>
+    <PublicFlag>false</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <Rotation>0.0</Rotation>
+    <FontSize>12</FontSize>
+    <Bold>true</Bold>
+    <Italic>false</Italic>
+    <Alignment>LEFT</Alignment>
+    <Color>-8355712</Color>
+    <TextCode><![CDATA["STORAGE & OPERATIONAL"]]></TextCode>
+</Text>
+<Rectangle>
+    <Id>9990000004</Id>
+    <Name><![CDATA[rectBackend]]></Name>
+    <X>930</X><Y>-20</Y>
+    <Label><X>10</X><Y>10</Y></Label>
+    <PublicFlag>true</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <ZHeight>10</ZHeight>
+    <LineWidth>1</LineWidth>
+    <LineColor>-8355712</LineColor>
+    <LineMaterial>null</LineMaterial>
+    <LineStyle>SOLID</LineStyle>
+    <Width>300</Width>
+    <Height>470</Height>
+    <Rotation>0.0</Rotation>
+    <FillColor>-1</FillColor>
+    <FillMaterial>null</FillMaterial>
+</Rectangle>
+<Text>
+    <Id>9990000014</Id>
+    <Name><![CDATA[rectBackend_label]]></Name>
+    <X>940</X><Y>-35</Y>
+    <Label><X>10</X><Y>0</Y></Label>
+    <PublicFlag>false</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <Rotation>0.0</Rotation>
+    <FontSize>12</FontSize>
+    <Bold>true</Bold>
+    <Italic>false</Italic>
+    <Alignment>LEFT</Alignment>
+    <Color>-8355712</Color>
+    <TextCode><![CDATA["LOGS & STAGING"]]></TextCode>
+</Text>
+<Text>
 						<Id>9984000010</Id>
 						<Name><![CDATA[storageFillDisplay]]></Name>
-						<X>-500</X><Y>40</Y>
+						<X>-600</X><Y>-350</Y>
 						<Label><X>10</X><Y>0</Y></Label>
 						<PublicFlag>false</PublicFlag>
 						<PresentationFlag>true</PresentationFlag>
@@ -12930,7 +14776,7 @@ send("CombustionFinished", this);]]></Code>
 					<Text>
 						<Id>9984000011</Id>
 						<Name><![CDATA[tierFillLogDisplay]]></Name>
-						<X>-500</X><Y>320</Y>
+						<X>-200</X><Y>-350</Y>
 						<Label><X>10</X><Y>0</Y></Label>
 						<PublicFlag>false</PublicFlag>
 						<PresentationFlag>true</PresentationFlag>
@@ -12952,7 +14798,7 @@ send("CombustionFinished", this);]]></Code>
 					<Text>
 						<Id>9985000010</Id>
 						<Name><![CDATA[residueLogDisplay]]></Name>
-						<X>100</X><Y>40</Y>
+						<X>250</X><Y>-350</Y>
 						<Label><X>10</X><Y>0</Y></Label>
 						<PublicFlag>false</PublicFlag>
 						<PresentationFlag>true</PresentationFlag>
@@ -12974,7 +14820,7 @@ send("CombustionFinished", this);]]></Code>
 					<Text>
 						<Id>9986000010</Id>
 						<Name><![CDATA[desStateDisplay]]></Name>
-						<X>-500</X><Y>560</Y>
+						<X>650</X><Y>-350</Y>
 						<Label><X>10</X><Y>0</Y></Label>
 						<PublicFlag>false</PublicFlag>
 						<PresentationFlag>true</PresentationFlag>
@@ -12990,20 +14836,43 @@ send("CombustionFinished", this);]]></Code>
 						<Color>-16744448</Color>
 						<TextCode><![CDATA["=== RECYCLING DES  (polymer: shred→wash→sep→extrude) ===\n"
 + String.format(" Shredding   : %s\n",
-    recyclShredding.size()>0   ? "▶ ACTIVE ("+recyclShredding.size()+" batch)" : "  idle")
+    recyclShredding.size()>0   ? String.format("▶ ACTIVE (%.3f t)", recyc_pendingRaw[0]+recyc_pendingRaw[1]+recyc_pendingRaw[2]+recyc_pendingRaw[3]+recyc_pendingRaw[4]) : "  idle")
 + String.format(" Washing     : %s\n",
-    recyclWashing.size()>0     ? "▶ ACTIVE ("+recyclWashing.size()+" batch)"   : "  idle")
+    recyclWashing.size()>0     ? String.format("▶ ACTIVE (%.3f t)", recyc_pendingRaw[0]+recyc_pendingRaw[1]+recyc_pendingRaw[2]+recyc_pendingRaw[3]+recyc_pendingRaw[4]) : "  idle")
 + String.format(" Separation  : %s\n",
-    recyclSeparation.size()>0  ? "▶ ACTIVE ("+recyclSeparation.size()+" batch)": "  idle")
+    recyclSeparation.size()>0  ? String.format("▶ ACTIVE (%.3f t)", recyc_pendingRaw[0]+recyc_pendingRaw[1]+recyc_pendingRaw[2]+recyc_pendingRaw[3]+recyc_pendingRaw[4]) : "  idle")
 + String.format(" Extrusion   : %s\n",
-    recyclExtrusion.size()>0   ? "▶ ACTIVE ("+recyclExtrusion.size()+" batch)" : "  idle")
+    recyclExtrusion.size()>0   ? String.format("▶ ACTIVE (%.3f t)", recyc_pendingRaw[0]+recyc_pendingRaw[1]+recyc_pendingRaw[2]+recyc_pendingRaw[3]+recyc_pendingRaw[4]) : "  idle")
 + "=== PROCESS WASTE DES  (residual → on-site landfill) ===\n"
 + String.format(" PW Transport: %s\n",
-    pwTransport.size()>0       ? "▶ ACTIVE ("+pwTransport.size()+" batch)"     : "  idle")
+    pwTransport.size()>0       ? String.format("▶ ACTIVE (%.3f t)", pw_pendingQty) : "  idle")
 + String.format(" PW Landfill : %s\n",
-    pwLandfillDeposit.size()>0 ? "▶ ACTIVE ("+pwLandfillDeposit.size()+" batch)": "  idle")
+    pwLandfillDeposit.size()>0 ? String.format("▶ ACTIVE (%.3f t)", pw_pendingQty) : "  idle")
 + String.format("  Pending PW qty: %.3f t", pw_pendingQty)]]></TextCode>
 					</Text>
+    <Text>
+    <Id>9989000010</Id>
+    <Name><![CDATA[recyclingBatchLogDisplay]]></Name>
+    <X>1050</X><Y>-350</Y>
+    <Label><X>10</X><Y>0</Y></Label>
+    <PublicFlag>false</PublicFlag>
+    <PresentationFlag>true</PresentationFlag>
+    <ShowLabel>false</ShowLabel>
+    <DrawMode>SHAPE_DRAW_2D</DrawMode>
+    <EmbeddedIcon>false</EmbeddedIcon>
+    <Z>0</Z>
+    <Rotation>0.0</Rotation>
+    <FontSize>10</FontSize>
+    <Bold>false</Bold>
+    <Italic>false</Italic>
+    <Alignment>LEFT</Alignment>
+    <Color>-16744448</Color>
+    <TextCode><![CDATA["=== RECYCLING BATCH LOG (last 10 batches) ===\n"
++ (recyclingBatchLog.isEmpty() ? "(no batches yet)" : String.join("\n",
+    (java.util.List<String>) recyclingBatchLog.subList(
+        Math.max(0, recyclingBatchLog.size()-10), recyclingBatchLog.size())))]]></TextCode>
+</Text>
+
 			</Presentation>
 				</Level>
 			</Presentation>
