@@ -182,8 +182,11 @@ double[] pricePaidToProvider  = new double[5];  // SGD/t (neg=provider pays, pos
 double[] pw_landfillSharePerMat     = {0.70, 0.80, 0.85, 0.50, 0.85};  // recycling residue → landfill
 double[] pw_incinerationSharePerMat = {0.25, 0.10, 0.05, 0.40, 0.10};  // recycling residue → incineration
 // noIS disposal: fate of waste when provider does NOT enter IS network (BAU baseline)
-double[] noIS_landfillShare         = {0.60, 0.75, 0.15, 0.55, 0.15};  // → landfill/open dump
-double[] noIS_incinerationShare     = {0.30, 0.10, 0.05, 0.35, 0.05};  // → incineration/open burning
+// [0] PLASTIC, [1] PAPER: same as pw_* arrays — modeling assumption subject to sensitivity analysis [ASSUMED]
+// [2] FERROUS, [4] NON_FERROUS: low shares reflect informal scrap dealer diversion (Wilson et al. 2006; Nguyen et al. 2019) [LIT]
+// [3] TEXTILE: higher incineration consistent with mixed-fibre low recyclability [ASSUMED]
+double[] noIS_landfillShare         = {0.70, 0.80, 0.15, 0.55, 0.15};  // [0],[1] aligned to pw — modeling assumption
+double[] noIS_incinerationShare     = {0.25, 0.10, 0.05, 0.35, 0.05};  // [0],[1] aligned to pw — modeling assumption
 // Ash fractions (read from Excel Intermediate sheet rows 26-27)
 double bottomAsh_massFraction = 0.25;  // mass fraction of incinerated waste → bottom ash
 double flyAsh_massFraction    = 0.04;  // mass fraction → fly ash (hazardous)
@@ -901,15 +904,21 @@ double truckCapNONFERROUS_t          = Input_data.getCellNumericValue("TruckFlee
 int    jollyTruckCount               = (int) Input_data.getCellNumericValue("TruckFleet", 3, 9);
 double jollyPremiumFactor            = Input_data.getCellNumericValue("TruckFleet", 3, 10);
 double truckCapex_SGD                = Input_data.getCellNumericValue("TruckFleet", 3, 11);
+// TruckBaseWeight_t: unladen (empty) truck mass. Used to compute fuel/emissions during deadhead runs
+// (truck traveling to provider without payload). Col 13 = M3 of TruckFleet sheet.
+// Source: ~8 t for medium waste truck (5-10 t payload class). TCVN 7271:2003; [ASSUMED-LIT]
+double truckBaseWeight_t             = Input_data.getCellNumericValue("TruckFleet", 3, 13);
 traceln("CE3.0 TruckFleet: velocity=" + truckVelocity_kmh + " km/h"
     + "  loading=" + loadingTime_h + "h  unloading=" + unloadingTime_h + "h");
 traceln("  Capacity(t): PLASTIC=" + truckCapPLASTIC_t + " PAPER=" + truckCapPAPER_t
     + " FERROUS=" + truckCapFERROUS_t + " TEXTILE=" + truckCapTEXTILE_t
     + " NONFERROUS=" + truckCapNONFERROUS_t);
 traceln("  Jolly: count=" + jollyTruckCount + " premiumFactor=" + jollyPremiumFactor
-    + "  TruckCapex=" + truckCapex_SGD + " SGD");
+    + "  TruckCapex=" + truckCapex_SGD + " SGD"
+    + "  BaseWeight=" + truckBaseWeight_t + " t");
 // NOTE: truckVelocity_kmh, loadingTime_h, unloadingTime_h, truckCap*, jollyPremiumFactor,
 // truckCapex_SGD are logged here. Full wiring to GarbageTruck agent properties is Phase 3.
+// Fleet CAPEX wiring is done in section 6b below (after garbageTrucks list is populated).
 
 // ─── 6. Initialize Providers from Companies_Listing (rows 2-67) ─────────────
 // Col1=ID, Col2=CompanyName, Col3=AgentType, Col4=Material,
@@ -1016,7 +1025,23 @@ intermediate.financialBalance  -= totalInvestment;
 npv                            -= totalInvestment;
 intermediate.entityNPV         -= totalInvestment;
 
-// ─── 10. Network-level CAPEX ─────────────────────────────────────────────────
+// ─── 10. Network-level CAPEX ──────────────────────────────────────────────────
+// Fleet CAPEX: truck purchase cost × total truck count, deducted at t=0.
+// In CE3.0, BIWASE (Intermediate) owns and operates the collection fleet.
+// Providers and Receivers pay transport OPEX per trip via transportCostCalc();
+// they do not own trucks and therefore bear no truck CAPEX.
+// If a future model extension gives Providers or Receivers their own trucks,
+// add their fleet CAPEX to their respective entityNPV deductions here.
+// [FUTURE TASK: distribute truck ownership if modeled explicitly per agent]
+double fleetCapex = garbageTrucks.size() * truckCapex_SGD;
+totalInvestment   += fleetCapex;
+intermediate.intermediateCapex += fleetCapex;
+intermediate.financialBalance  -= fleetCapex;
+npv                            -= fleetCapex;
+intermediate.entityNPV         -= fleetCapex;
+traceln("Fleet CAPEX: " + garbageTrucks.size() + " trucks × "
+    + String.format("%.0f", truckCapex_SGD) + " SGD = "
+    + String.format("%.0f", fleetCapex) + " SGD deducted at t=0");
 totalCapex = totalInvestment;
 
 traceln("CE3.0 22MARZ Startup complete.");
@@ -12539,6 +12564,7 @@ send("CombustionFinished", this);]]></Code>
 				<EmbeddedObject>
 					<Id>9983001001</Id>
 					<Name><![CDATA[pwStart]]></Name>
+					<Description><![CDATA[PROCESS WASTE DES — Step 1/4: Source (visualization only). Fired monthly by recyclingProcessing() via pwStart.inject() when process waste > 0. This DES does NOT model physical truck transport — the GarbageTruck agent handles external collection. It visualizes what happens to recycling residue (process waste) already inside BIWASE after processing. Chain: pwStart → pwTransport (internal bin movement, 1–4 h) → pwLandfillDeposit (deposit at Da Phuoc landfill, 0.5–2 h) → pwSink (LCA impacts applied from pw_pending* buffers). Tonnage and LCA values are staged in pw_pending* variables before injection.]]></Description>
 					<X>410</X><Y>540</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
@@ -12631,6 +12657,7 @@ send("CombustionFinished", this);]]></Code>
 				<EmbeddedObject>
 					<Id>9983001002</Id>
 					<Name><![CDATA[pwTransport]]></Name>
+					<Description><![CDATA[PROCESS WASTE DES — Step 2/4: Transport delay (tri 1, 2, 4 h). Represents internal logistics at BIWASE: forklift movement of residue bins from the sorting/processing hall to the outbound truck bay (~100–300 m on-site). Duration is dominated by equipment availability, not road travel. This is NOT an external GarbageTruck trip.]]></Description>
 					<X>480</X><Y>530</Y>
 					<Label><X>-30</X><Y>64</Y></Label>
 					<PublicFlag>false</PublicFlag>
@@ -12688,6 +12715,7 @@ send("CombustionFinished", this);]]></Code>
 				<EmbeddedObject>
 					<Id>9983001003</Id>
 					<Name><![CDATA[pwLandfillDeposit]]></Name>
+					<Description><![CDATA[PROCESS WASTE DES — Step 3/4: Landfill deposit delay (tri 0.5, 1, 2 h). Represents the formal deposit at Da Phuoc Sanitary Landfill: weighbridge check-in, cell routing, compaction, and daily cover. The split between landfill and incineration is controlled by pw_landfillSharePerMat[m] and pw_incinerationSharePerMat[m], set in recyclingProcessing() before injection. Residual fraction (1 - landfill - incineration) is logged as pw_toOther (future IS output / unspecified fate).]]></Description>
 					<X>565</X><Y>530</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
@@ -12745,6 +12773,7 @@ send("CombustionFinished", this);]]></Code>
 				<EmbeddedObject>
 					<Id>9983001004</Id>
 					<Name><![CDATA[pwSink]]></Name>
+					<Description><![CDATA[PROCESS WASTE DES — Step 4/4: Sink — LCA accounting trigger. On entity arrival, staged LCA impacts (pw_pending*) are applied to cumulative accumulators: GWPActualProcess, HTPActualProcess, LUPActualProcess, CEDActualProcess. All pw_pending* buffers and recyc_pending* arrays are reset. This is the ONLY step where numbers change — all prior steps are timing and visualization only.]]></Description>
 					<X>650</X><Y>540</Y>
 					<Label><X>-20</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
