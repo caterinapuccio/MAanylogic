@@ -1016,9 +1016,19 @@ if (intermediate.tier2SharedCapacity < 0) {
 double intCapex               = intTotalStorage * capexPerStorageUnit;
 double recyclingCapex_SGD     = Input_data.getCellNumericValue("Intermediate Investment", 3, 2);
 double recyclingOpex_annSGD   = Input_data.getCellNumericValue("Intermediate Investment", 4, 2);
+// Phase 14: Brick plant parameters — read from Intermediate Investment B5-B7
+// B5 = brickYield_tPerTAsh, B6 = brickPrice_SGD_t, B7 = brickPlantCapex_SGD
+// All [ILLUSTRATIVE] — replace with BIWASE data before thesis submission. xxx.
+intermediate.brickYield_tPerTAsh   = Input_data.getCellNumericValue("Intermediate Investment", 5, 2);
+intermediate.brickPrice_SGD_t      = Input_data.getCellNumericValue("Intermediate Investment", 6, 2);
+intermediate.brickPlantCapex_SGD   = Input_data.getCellNumericValue("Intermediate Investment", 7, 2);
+traceln("CE3.0 BrickPlant: yield=" + intermediate.brickYield_tPerTAsh
+    + " t/t-ash | price=" + intermediate.brickPrice_SGD_t
+    + " SGD/t | capex=" + intermediate.brickPlantCapex_SGD + " SGD");
 intermediate.recyclingCapex      = recyclingCapex_SGD;
 intermediate.recyclingOpexAnnual = recyclingOpex_annSGD;
-double totalInvestment           = intCapex + recyclingCapex_SGD;
+double totalInvestment           = intCapex + recyclingCapex_SGD
+                                 + intermediate.brickPlantCapex_SGD; // Phase 14: brick kiln CAPEX
 intermediate.intermediateCapex   = totalInvestment;
 // t=0 CAPEX: deducted undiscounted — NOT added to totalCosts (avoids year-1 discounting)
 intermediate.financialBalance  -= totalInvestment;
@@ -9747,6 +9757,92 @@ else return black;]]></Body>
         </InitialValue>
     </Properties>
 </Variable>
+
+			<!-- ── Phase 14: Brick plant variables (combustion bottom ash → bricks — ESCAR p.14, p.20, p.70) ── -->
+			<Variable Class="PlainVariable">
+				<Id>9991000001</Id>
+				<Name><![CDATA[stagingAshCycleMass_t]]></Name>
+				<Description><![CDATA[Staging: snapshot of WasteToBeBurned at wasteDrying entry. Preserves cycle mass before CombustionSink resets WasteToBeBurned. Used by ashTransportToBrickKiln and brickProduction to compute bottom ash and fly ash quantities.]]></Description>
+				<X>-600</X><Y>600</Y>
+				<Label><X>10</X><Y>0</Y></Label>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>true</PresentationFlag>
+				<ShowLabel>true</ShowLabel>
+				<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+					<Type><![CDATA[double]]></Type>
+					<InitialValue Class="CodeValue"><Code><![CDATA[0.0]]></Code></InitialValue>
+				</Properties>
+			</Variable>
+			<Variable Class="PlainVariable">
+				<Id>9991000002</Id>
+				<Name><![CDATA[brickRevenues]]></Name>
+				<Description><![CDATA[Cumulative brick sale revenue (SGD). Credited in brickProduction DES step. brickRevenues counted in intermediate IS revenue stream (ESCAR: bricks sold commercially).]]></Description>
+				<X>-600</X><Y>630</Y>
+				<Label><X>10</X><Y>0</Y></Label>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>true</PresentationFlag>
+				<ShowLabel>true</ShowLabel>
+				<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+					<Type><![CDATA[double]]></Type>
+					<InitialValue Class="CodeValue"><Code><![CDATA[0.0]]></Code></InitialValue>
+				</Properties>
+			</Variable>
+			<Variable Class="PlainVariable">
+				<Id>9991000003</Id>
+				<Name><![CDATA[brickProduced_t]]></Name>
+				<Description><![CDATA[Cumulative brick mass produced (t). Per cycle: stagingAshCycleMass_t * bottomAsh_massFraction * brickYield_tPerTAsh.]]></Description>
+				<X>-600</X><Y>660</Y>
+				<Label><X>10</X><Y>0</Y></Label>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>true</PresentationFlag>
+				<ShowLabel>true</ShowLabel>
+				<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+					<Type><![CDATA[double]]></Type>
+					<InitialValue Class="CodeValue"><Code><![CDATA[0.0]]></Code></InitialValue>
+				</Properties>
+			</Variable>
+			<Variable Class="PlainVariable">
+				<Id>9991000004</Id>
+				<Name><![CDATA[brickYield_tPerTAsh]]></Name>
+				<Description><![CDATA[t bricks per t bottom ash. Excel: Intermediate Investment B5. Default 0.30 [ILLUSTRATIVE]. ~300-400 bricks/t ash @ 2-3 kg/brick. xxx: replace with BIWASE data before submission.]]></Description>
+				<X>-600</X><Y>690</Y>
+				<Label><X>10</X><Y>0</Y></Label>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>true</PresentationFlag>
+				<ShowLabel>true</ShowLabel>
+				<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+					<Type><![CDATA[double]]></Type>
+					<InitialValue Class="CodeValue"><Code><![CDATA[0.30]]></Code></InitialValue>
+				</Properties>
+			</Variable>
+			<Variable Class="PlainVariable">
+				<Id>9991000005</Id>
+				<Name><![CDATA[brickPrice_SGD_t]]></Name>
+				<Description><![CDATA[Market price for ash-fired bricks (SGD/t). Excel: Intermediate Investment B6. Default 150 SGD/t [ILLUSTRATIVE]. xxx: replace before submission.]]></Description>
+				<X>-600</X><Y>720</Y>
+				<Label><X>10</X><Y>0</Y></Label>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>true</PresentationFlag>
+				<ShowLabel>true</ShowLabel>
+				<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+					<Type><![CDATA[double]]></Type>
+					<InitialValue Class="CodeValue"><Code><![CDATA[150.0]]></Code></InitialValue>
+				</Properties>
+			</Variable>
+			<Variable Class="PlainVariable">
+				<Id>9991000006</Id>
+				<Name><![CDATA[brickPlantCapex_SGD]]></Name>
+				<Description><![CDATA[Brick kiln CAPEX (SGD). Excel: Intermediate Investment B7. Default 500,000 SGD [ILLUSTRATIVE]. ESCAR p.70: 100,000 bricks/day tunnel kiln. Deducted at t=0. xxx: replace before submission.]]></Description>
+				<X>-600</X><Y>750</Y>
+				<Label><X>10</X><Y>0</Y></Label>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>true</PresentationFlag>
+				<ShowLabel>true</ShowLabel>
+				<Properties SaveInSnapshot="false" Constant="false" AccessType="public" StaticVariable="false">
+					<Type><![CDATA[double]]></Type>
+					<InitialValue Class="CodeValue"><Code><![CDATA[500000.0]]></Code></InitialValue>
+				</Properties>
+			</Variable>
 </Variables>
 			<Connectors>
 				<Connector>
@@ -9869,7 +9965,7 @@ else return black;]]></Body>
 					<TargetEmbeddedObjectReference>
 						<PackageName><![CDATA[ma1]]></PackageName>
 						<ClassName><![CDATA[Intermediate]]></ClassName>
-						<ItemName><![CDATA[slagFormation]]></ItemName>
+						<ItemName><![CDATA[flyAshToLandfill]]></ItemName>
 					</TargetEmbeddedObjectReference>
 					<TargetConnectableItemReference>
 						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
@@ -9879,6 +9975,107 @@ else return black;]]></Body>
 					<Points>
 						<Point><X>1615</X><Y>360</Y></Point>
 						<Point><X>1570</X><Y>360</Y></Point>
+					</Points>
+				</Connector>
+
+				<!-- ── Phase 14: Brick plant connectors (slagFormation → ashTransport → brickProd → flyAsh → CombustionSink) ── -->
+				<Connector>
+					<Id>9991100001</Id>
+					<Name><![CDATA[conn_slag2AshTransport]]></Name>
+					<X>740</X><Y>310</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[ashTransportToBrickKiln]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[slagFormation]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>
+				<Connector>
+					<Id>9991100002</Id>
+					<Name><![CDATA[conn_ashToBrickProd]]></Name>
+					<X>830</X><Y>310</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[brickProduction]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[ashTransportToBrickKiln]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
+				</Connector>
+				<Connector>
+					<Id>9991100003</Id>
+					<Name><![CDATA[conn_brickToFlyAsh]]></Name>
+					<X>920</X><Y>310</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[flyAshToLandfill]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[brickProduction]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
 					</Points>
 				</Connector>
 
@@ -11875,6 +12072,10 @@ traceln(String.format(
 						</Parameter>
 						<Parameter>
 							<Name><![CDATA[onEnter]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[// COMBUSTION DES Phase 14: Stage cycle mass at DES start.
+// stagingAshCycleMass_t is used downstream in ashTransportToBrickKiln and brickProduction
+// to compute bottom ash and fly ash quantities, since CombustionSink will later reset WasteToBeBurned.
+stagingAshCycleMass_t = WasteToBeBurned;]]></Code></Value>
 						</Parameter>
 						<Parameter>
 							<Name><![CDATA[onAtExit]]></Name>
@@ -12168,6 +12369,205 @@ send("CombustionFinished", this);]]></Code>
 					</QuantityColumn>
 				</EmbeddedObject>
 
+
+				<!-- ── Phase 14: Brick plant DES extension (after slagFormation) ── -->
+				<EmbeddedObject>
+					<Id>9991001001</Id>
+					<Name><![CDATA[ashTransportToBrickKiln]]></Name>
+					<Description><![CDATA[COMBUSTION DES — Step 5/7: Ash transport to brick kiln (tri 1, 2, 4 h). Internal BIWASE logistics: forklift movement of ash/slag hopper to tunnel kiln area. ESCAR: ash collected every 90-120 min by forklift (Photo 4, p.115). Entry action stages stagingAshCycleMass_t. Only bottom ash fraction (bottomAsh_massFraction=0.25) continues to brickProduction; fly ash (0.04) routes via flyAshToLandfill.]]></Description>
+					<X>740</X><Y>310</Y>
+					<Label><X>-70</X><Y>-18</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular( 1, 2, 4 )]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onEnter]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9991001101</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>
+				<EmbeddedObject>
+					<Id>9991001002</Id>
+					<Name><![CDATA[brickProduction]]></Name>
+					<Description><![CDATA[COMBUSTION DES — Step 6/7: Brick production (tri 2, 4, 8 h). Bottom ash + WW treatment sludge fired in tunnel kiln. ESCAR p.70: 100,000 bricks/day capacity. Only bottom ash fraction (bottomAsh_massFraction=0.25) enters here. Exit action: brickMass = stagingAshCycleMass_t * bottomAsh_massFraction * brickYield_tPerTAsh; revenue credited to brickRevenues and financialBalance. [xxx: brickYield and brickPrice are ILLUSTRATIVE — replace before submission]]]></Description>
+					<X>830</X><Y>310</Y>
+					<Label><X>-50</X><Y>62</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular( 2, 4, 8 )]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onEnter]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[onExit]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[// Phase 14: Brick production complete — credit revenue to BIWASE
+double bottomAshMass_t = stagingAshCycleMass_t * main.bottomAsh_massFraction;
+double brickMass_t     = bottomAshMass_t * brickYield_tPerTAsh;
+double revenue         = brickMass_t * brickPrice_SGD_t;
+brickProduced_t   += brickMass_t;
+brickRevenues     += revenue;
+financialBalance  += revenue;   // positive: BIWASE earns from brick sales
+entityNPV         += revenue / Math.pow(1.0 + main.discountRate, time(YEAR));
+traceln(String.format("[BRICK-PROD t=%.1fd] bottomAsh=%.3ft → bricks=%.3ft | revenue=%.2f SGD | cumBrickRev=%.2f SGD",
+    time(DAY), bottomAshMass_t, brickMass_t, revenue, brickRevenues));]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9991001102</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>
+				<EmbeddedObject>
+					<Id>9991001003</Id>
+					<Name><![CDATA[flyAshToLandfill]]></Name>
+					<Description><![CDATA[COMBUSTION DES — Step 7/7: Fly ash to hazardous landfill (tri 0.5, 1, 2 h). Fly ash (flyAsh_massFraction=0.04 of cycle mass) is classified as hazardous waste — concentrates heavy metals (Pb, Cd, Zn) and dioxins from combustion. Routed to secured hazardous landfill (NOT the brick kiln). LCA factor: ecoinvent 'treatment of fly ash from municipal incineration, residual material landfill' [ILLUSTRATIVE — replace before submission]. Exit action adds fly ash LCA burden to GWPActualIncineration.]]></Description>
+					<X>920</X><Y>310</Y>
+					<Label><X>-30</X><Y>62</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter><Name><![CDATA[type]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular( 0.5, 1, 2 )]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[capacity]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[true]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[entityLocation]]></Name></Parameter>
+						<Parameter><Name><![CDATA[pushProtocol]]></Name></Parameter>
+						<Parameter><Name><![CDATA[restoreEntityLocationOnExit]]></Name></Parameter>
+						<Parameter><Name><![CDATA[forceStatisticsCollection]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onEnter]]></Name></Parameter>
+						<Parameter><Name><![CDATA[onAtExit]]></Name></Parameter>
+						<Parameter>
+							<Name><![CDATA[onExit]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[// Phase 14: Fly ash routed to hazardous secured landfill — apply LCA burden
+// Fly ash concentrates heavy metals (Pb, Cd, Zn) and dioxins. HAZARDOUS — NOT usable for bricks.
+double flyAshMass_kg = stagingAshCycleMass_t * main.flyAsh_massFraction * 1000.0;
+// [ILLUSTRATIVE] LCA factor for hazardous fly ash landfill — replace with ecoinvent:
+// "treatment of fly ash from municipal incineration, residual material landfill" (RoW or SE Asia)
+double gwpFlyAsh_kgCO2eq = flyAshMass_kg * 0.005; // [ILLUSTRATIVE: ~5 g CO2-eq/kg fly ash, ecoinvent RoW]
+GWPActualIncineration += gwpFlyAsh_kgCO2eq;
+traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → hazardous landfill | GWP+=%.4f kg CO2-eq",
+    time(DAY), stagingAshCycleMass_t * main.flyAsh_massFraction, flyAshMass_kg, gwpFlyAsh_kgCO2eq));]]></Code></Value>
+						</Parameter>
+						<Parameter><Name><![CDATA[onRemove]]></Name></Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue"><Code><![CDATA[100]]></Code></Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue"><Code><![CDATA[0]]></Code></ColumnCode>
+					<RowCode Class="CodeValue"><Code><![CDATA[0]]></Code></RowCode>
+					<LocationNameCode Class="CodeValue"><Code><![CDATA[""]]></Code></LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>9991001103</Id>
+						<TableReference></TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn></QuantityColumn>
+				</EmbeddedObject>
 				<EmbeddedObject>
 					<Id>9982001001</Id>
 					<Name><![CDATA[recyclStart]]></Name>
