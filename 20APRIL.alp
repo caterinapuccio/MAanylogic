@@ -7,7 +7,7 @@
 <AnyLogicWorkspace WorkspaceVersion="1.9" AnyLogicVersion="8.9.8.202602271015" AlpVersion="8.9.7">
 <Model>
 	<Id>1772010676420</Id>
-	<Name><![CDATA[03APRIL]]></Name>
+	<Name><![CDATA[20april]]></Name>
 	<EngineVersion>6</EngineVersion>
 	<JavaPackageName><![CDATA[ma1]]></JavaPackageName>
 	<ModelTimeUnit><![CDATA[Day]]></ModelTimeUnit>
@@ -91,12 +91,12 @@ double[] CEDWasteToLandfill = new double[6];  // MJ / kg landfill operations
 // ═══════════════════════════════════════════════════════════════════════════════
 // PER-MATERIAL KPI TRACKING ARRAYS (index = MaterialType.values()[i])
 // ═══════════════════════════════════════════════════════════════════════════════
-double[] co2SavedPerMat      = {0, 0, 0, 0, 0, 0}  // [5]=ORGANIC_WASTE;   // kg CO2-eq saved
-double[] HTPSavedPerMat      = {0, 0, 0, 0, 0, 0}  // [5]=ORGANIC_WASTE;   // kg 1,4-DCB-eq avoided
-double[] LUPSavedPerMat      = {0, 0, 0, 0, 0, 0}  // [5]=ORGANIC_WASTE;   // m2*a avoided
-double[] CEDSavedPerMat      = {0, 0, 0, 0, 0, 0}  // [5]=ORGANIC_WASTE;   // MJ avoided
-double[] exchangedPerMat     = {0, 0, 0, 0, 0, 0}  // [5]=ORGANIC_WASTE;   // tonnes exchanged
-double[] landfillCostPerMat  = {0, 0, 0, 0, 0, 0}  // [5]=ORGANIC_WASTE;   // USD disposal costs
+double[] co2SavedPerMat      = {0, 0, 0, 0, 0, 0};  // [5]=ORGANIC_WASTE;   // kg CO2-eq saved
+double[] HTPSavedPerMat      = {0, 0, 0, 0, 0, 0};  // [5]=ORGANIC_WASTE;   // kg 1,4-DCB-eq avoided
+double[] LUPSavedPerMat      = {0, 0, 0, 0, 0, 0};  // [5]=ORGANIC_WASTE;   // m2*a avoided
+double[] CEDSavedPerMat      = {0, 0, 0, 0, 0, 0};  // [5]=ORGANIC_WASTE;   // MJ avoided
+double[] exchangedPerMat     = {0, 0, 0, 0, 0, 0};  // [5]=ORGANIC_WASTE;   // tonnes exchanged
+double[] landfillCostPerMat  = {0, 0, 0, 0, 0, 0};  // [5]=ORGANIC_WASTE;   // USD disposal costs
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TIME-SERIES LOGGING (for CSV export after experiment)
@@ -478,7 +478,7 @@ public void validateExcelConnections() {
     }
 
     // ── Companies_Listing — Receivers (rows 68-72) ───────────────────────────
-    String[] recNames = {"Receiver_Plastic","Receiver_Paper","Receiver_Ferrous","Receiver_Textile","Receiver_NonFerrous"};
+    String[] recNames = {"Receiver_Plastic","Receiver_Paper","Receiver_Ferrous","Receiver_Textile","Receiver_NonFerrous","Receiver_Organic_Agri"};
     for (int i = 0; i < receivers.size(); i++) {
         Receiver r = receivers.get(i);
         int row = 68 + i;
@@ -489,7 +489,7 @@ public void validateExcelConnections() {
         if (r.processingEfficiency < 0) {
             validationErrors.add(new String[]{
                 recNames[i], "processingEfficiency", "recycling_and processingfactors",
-                "C", String.valueOf(new int[]{5,7,9,11,13}[i]),
+                "C", String.valueOf(new int[]{5,7,9,11,13,15}[i]),
                 String.valueOf(r.processingEfficiency),
                 "SENTINEL -1.0: value not loaded from Excel. Check sheet 'recycling_and processingfactors' col C.",
                 "(0, 1]"
@@ -653,28 +653,29 @@ public void exportValidationReport() {
         int mapRow = 1;
         String[][] connectionMap = {
             // {variable, sheet, col, rows, agent, range, note}
-            {"conversionEffPerMat[0..4]","Materials","B","3-7","Intermediate","(0,1]","per material"},
-            {"GWPVirginPerKg[0..4]","Materials","C","3-7","Main",">=0","per material"},
-            {"GWPWasteToRecycling[0..4]","Materials","D","3-7","Main",">=0","per material"},
-            {"GWPWasteToLandfill[0..4]","Materials","E","3-7","Main",">=0","per material"},
-            {"HTPVirginPerKg[0..4]","Materials","F","3-7","Main",">=0","per material"},
-            {"HTPWasteToRecycling[0..4]","Materials","G","3-7","Main",">=0","per material"},
-            {"HTPWasteToLandfill[0..4]","Materials","H","3-7","Main",">=0","per material"},
-            {"LUPVirginPerKg[0..4]","Materials","I","3-7","Main",">=0","per material"},
-            {"LUPWasteToRecycling[0..4]","Materials","J","3-7","Main",">=0","per material"},
-            {"LUPWasteToLandfill[0..4]","Materials","K","3-7","Main",">=0","per material"},
-            {"CEDVirginPerKg[0..4]","Materials","L","3-7","Main",">=0","per material"},
-            {"CEDWasteToRecycling[0..4]","Materials","M","3-7","Main",">=0","per material"},
-            {"CEDWasteToLandfill[0..4]","Materials","N","3-7","Main",">=0","per material"},
-            {"priceVirginPerMat[0..4]","Materials","O","3-7","Main",">0 SGD/t","per material"},
-            {"priceSecondaryPerMat[0..4]","Materials","P","3-7","Main",">0 SGD/t","per material"},
-            {"costLandfillPerMat[0..4]","Materials","Q","3-7","Main",">=0 SGD/t","per material"},
-            {"pricePaidToProvider[0..4]","Materials","V","3-7","Main","any SGD/t","per material"},
+            {"conversionEffPerMat[0..4]","Materials","B","3-8","Intermediate","(0,1]","per material"},
+            {"GWPVirginPerKg[0..4]","Materials","C","3-8","Main",">=0","per material"},
+            {"GWPWasteToRecycling[0..4]","Materials","D","3-8","Main",">=0","per material"},
+            {"GWPWasteToLandfill[0..4]","Materials","E","3-8","Main",">=0","per material"},
+            {"HTPVirginPerKg[0..4]","Materials","F","3-8","Main",">=0","per material"},
+            {"HTPWasteToRecycling[0..4]","Materials","G","3-8","Main",">=0","per material"},
+            {"HTPWasteToLandfill[0..4]","Materials","H","3-8","Main",">=0","per material"},
+            {"LUPVirginPerKg[0..4]","Materials","I","3-8","Main",">=0","per material"},
+            {"LUPWasteToRecycling[0..4]","Materials","J","3-8","Main",">=0","per material"},
+            {"LUPWasteToLandfill[0..4]","Materials","K","3-8","Main",">=0","per material"},
+            {"CEDVirginPerKg[0..4]","Materials","L","3-8","Main",">=0","per material"},
+            {"CEDWasteToRecycling[0..4]","Materials","M","3-8","Main",">=0","per material"},
+            {"CEDWasteToLandfill[0..4]","Materials","N","3-8","Main",">=0","per material"},
+            {"priceVirginPerMat[0..4]","Materials","O","3-8","Main",">0 SGD/t","per material"},
+            {"priceSecondaryPerMat[0..4]","Materials","P","3-8","Main",">0 SGD/t","per material"},
+            {"costLandfillPerMat[0..4]","Materials","Q","3-8","Main",">=0 SGD/t","per material"},
+            {"pricePaidToProvider[0..4]","Materials","V","3-8","Main","any SGD/t","per material"},
             {"processingEffPerMat[0]","recycling_and processingfactors","C","5","Receiver_Plastic","(0,1]",""},
             {"processingEffPerMat[1]","recycling_and processingfactors","C","7","Receiver_Paper","(0,1]",""},
             {"processingEffPerMat[2]","recycling_and processingfactors","C","9","Receiver_Ferrous","(0,1]",""},
             {"processingEffPerMat[3]","recycling_and processingfactors","C","11","Receiver_Textile","(0,1]",""},
             {"processingEffPerMat[4]","recycling_and processingfactors","C","13","Receiver_NonFerrous","(0,1]",""},
+            {"processingEffPerMat[5]","recycling_and processingfactors","C","15","Receiver_Organic_Agri","(0,1]","ORGANIC_WASTE composting efficiency"},
             {"totalStorageCapacity","Intermediate","B","3","Intermediate",">0 t",""},
             {"tier1Pct","Intermediate","B","4","Intermediate","(0,1)",""},
             {"capexPerStorageUnit","Intermediate","B","7","Intermediate",">0 SGD/t",""},
@@ -802,7 +803,7 @@ public void exportValidationReport() {
 java.util.ArrayList<Object[]> truckLog = new java.util.ArrayList<>();
 
 ]]></AdditionalClassCode>
-			<StartupCode><![CDATA[// ═══ CE 3.0 STARTUP (03APRIL): Read from 03APRIL.xlsx ════════════════════════
+			<StartupCode><![CDATA[// ═══ CE 3.0 STARTUP (03APRIL): Read from 20APRIL.xlsx ════════════════════════
 traceln(">>> CE3.0 STARTUP 22MARZ: onStartup() entered");
 
 // ─── 1. Read per-material arrays from Materials sheet ────────────────────────
@@ -2452,7 +2453,7 @@ if (currentYear >= 10) {
 					<ShowLabel>true</ShowLabel>
 					<ResourceReference>
 						<PackageName><![CDATA[ma1]]></PackageName>
-						<ClassName><![CDATA[03APRIL.xlsx]]></ClassName>
+						<ClassName><![CDATA[20APRIL.xlsx]]></ClassName>
 					</ResourceReference>
 					<SaveInSnapshot>false</SaveInSnapshot>
 					<LoadOnStartup>true</LoadOnStartup>
@@ -2468,7 +2469,7 @@ if (currentYear >= 10) {
 					<ShowLabel>true</ShowLabel>
 					<ResourceReference>
 						<PackageName><![CDATA[ma1]]></PackageName>
-						<ClassName><![CDATA[03APRIL.xlsx]]></ClassName>
+						<ClassName><![CDATA[20APRIL.xlsx]]></ClassName>
 					</ResourceReference>
 					<SaveInSnapshot>false</SaveInSnapshot>
 					<LoadOnStartup>true</LoadOnStartup>
@@ -2733,6 +2734,15 @@ if (currentYear >= 10) {
 							<PackageName><![CDATA[ma1]]></PackageName>
 							<ClassName><![CDATA[VeChai]]></ClassName>
 						</ActiveObjectClass>
+						<GenericParameterSubstitute>
+							<GenericParameterSubstituteReference>
+								<PackageName><![CDATA[ma1]]></PackageName>
+								<ClassName><![CDATA[VeChai]]></ClassName>
+								<ItemName><![CDATA[8888900000001]]></ItemName>
+							</GenericParameterSubstituteReference>
+						</GenericParameterSubstitute>
+						<Parameters>
+						</Parameters>
 						<ReplicationFlag>true</ReplicationFlag>
 						<Replication Class="CodeValue"><Code><![CDATA[1]]></Code></Replication>
 						<CollectionType>ARRAY_LIST_BASED</CollectionType>
@@ -2776,7 +2786,7 @@ if (currentYear >= 10) {
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
-					<EmbeddedIcon>false</EmbeddedIcon>
+					<EmbeddedIcon>true</EmbeddedIcon>
 					<Z>0</Z>
 					<Rotation>0.0</Rotation>
 					<ScaleType>AUTOMATICALLY_CALCULATED</ScaleType>
@@ -2794,7 +2804,7 @@ if (currentYear >= 10) {
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
-					<EmbeddedIcon>false</EmbeddedIcon>
+					<EmbeddedIcon>true</EmbeddedIcon>
 					<Z>0</Z>
 					<Rotation>0.0</Rotation>
 					<ScaleType>AUTOMATICALLY_CALCULATED</ScaleType>
@@ -3613,7 +3623,7 @@ if (currentYear >= 10) {
     			<TimePlot>
 					<Id>1772111259855</Id>
 					<Name><![CDATA[plotNPV]]></Name>
-					<X>-900</X><Y>1430</Y>
+					<X>90</X><Y>1930</Y>
 					<Label><X>0</X><Y>-10</Y></Label>
 					<PublicFlag>true</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -3683,7 +3693,7 @@ if (currentYear >= 10) {
     			<TimePlot>
 					<Id>1772111343207</Id>
 					<Name><![CDATA[plotROI]]></Name>
-					<X>-750</X><Y>1960</Y>
+					<X>970</X><Y>1930</Y>
 					<Label><X>0</X><Y>-10</Y></Label>
 					<PublicFlag>true</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -4008,7 +4018,7 @@ if (currentYear >= 10) {
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>false</ShowLabel>
 					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
-					<EmbeddedIcon>false</EmbeddedIcon>
+					<EmbeddedIcon>true</EmbeddedIcon>
 					<Z>0</Z>
 					<Rotation>0.0</Rotation>
 					<ScaleType>AUTOMATICALLY_CALCULATED</ScaleType>
@@ -10877,23 +10887,104 @@ else return black;]]></Body>
 						<Point><X>-40</X><Y>0</Y></Point>
 					</Points>
 				</Connector>
-							<Connector>
+				<Connector>
 					<Id>8889000100001</Id>
 					<Name><![CDATA[connector_compost_start_sort]]></Name>
-					<Source Class="PortInfo"><EmbeddedObject>compost_Start</EmbeddedObject><Port>out</Port></Source>
-					<Target Class="PortInfo"><EmbeddedObject>compost_Sorting</EmbeddedObject><Port>in</Port></Target>
+					<X>890</X><Y>500</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[compost_Sorting]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[compost_Start]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
 				</Connector>
 				<Connector>
 					<Id>8889000100002</Id>
 					<Name><![CDATA[connector_compost_sort_mature]]></Name>
-					<Source Class="PortInfo"><EmbeddedObject>compost_Sorting</EmbeddedObject><Port>out</Port></Source>
-					<Target Class="PortInfo"><EmbeddedObject>compost_Maturation</EmbeddedObject><Port>in</Port></Target>
+					<X>970</X><Y>500</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[compost_Maturation]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[compost_Sorting]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
 				</Connector>
 				<Connector>
 					<Id>8889000100003</Id>
 					<Name><![CDATA[connector_compost_mature_sink]]></Name>
-					<Source Class="PortInfo"><EmbeddedObject>compost_Maturation</EmbeddedObject><Port>out</Port></Source>
-					<Target Class="PortInfo"><EmbeddedObject>compost_Sink</EmbeddedObject><Port>in</Port></Target>
+					<X>1050</X><Y>500</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<SourceEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[compost_Sink]]></ItemName>
+					</SourceEmbeddedObjectReference>
+					<SourceConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+						<ItemName><![CDATA[in]]></ItemName>
+					</SourceConnectableItemReference>
+					<TargetEmbeddedObjectReference>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Intermediate]]></ClassName>
+						<ItemName><![CDATA[compost_Maturation]]></ItemName>
+					</TargetEmbeddedObjectReference>
+					<TargetConnectableItemReference>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+						<ItemName><![CDATA[out]]></ItemName>
+					</TargetConnectableItemReference>
+					<Points>
+						<Point><X>0</X><Y>0</Y></Point>
+						<Point><X>-40</X><Y>0</Y></Point>
+					</Points>
 				</Connector>
 </Connectors>
 			<StatechartElements>
@@ -11526,7 +11617,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
     // ── Tier fill snapshot ─────────────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < main.MaterialType.values().length; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         tierFillLog.add(String.format("Day%6.1f|ACCEPT %-8s +%.2ft|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), mat.toString(), qty,
             _t1c > 0 ? _t1u/_t1c*100 : 0.0,
@@ -11598,7 +11689,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
     // ── Tier fill snapshot ─────────────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < main.MaterialType.values().length; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         tierFillLog.add(String.format("Day%6.1f|ACCEPT %-8s +%.2ft|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), mat.toString(), qty,
             _t1c > 0 ? _t1u/_t1c*100 : 0.0,
@@ -11632,7 +11723,8 @@ return false;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
-					<Body><![CDATA[int nMat = MaterialType.values().length;
+					<Body><![CDATA[String[] matNames = {"PLASTIC_SCRAP","PAPER_WASTE","FERROUS_METAL","TEXTILE_WASTE","NON_FERROUS_METAL","ORGANIC_WASTE"};  // CE3.0: local copy — keep in sync with MaterialType enum
+int nMat = 6;  // CE3.0: OptionList .values() not supported in agent code; hardcoded = MaterialType.values().length
 for (int m = 0; m < nMat; m++) {
     double rawBuffer = recyclingStoragePerMat[m];
     if (rawBuffer <= 0) continue;
@@ -11687,13 +11779,13 @@ for (int m = 0; m < nMat; m++) {
     recyclingStoragePerMat[m] = 0;
 
     if (main.debugMode) traceln(String.format("Intermediate recyclingProcessing[%s]: raw=%.2f converted=%.2f waste=%.2f",
-        MaterialType.values()[m], rawBuffer, converted, processWaste));
+        matNames[m], rawBuffer, converted, processWaste));
 }
 
 // ── Tier fill snapshot before reset (captures peak fill) ────────────────
 {
     double _t1u = 0, _t1c = 0;
-    for (int _m = 0; _m < main.MaterialType.values().length; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+    for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
     tierFillLog.add(String.format("Day%6.1f|RESET  (recycle trigger)|T1:%3.0f%% T2:%3.0f%%",
         time(DAY),
         _t1c > 0 ? _t1u/_t1c*100 : 0.0,
@@ -11721,7 +11813,7 @@ for (int _m = 0; _m < nMat; _m++) {
     _batchLine.append(String.format(" %.3ft total |", _totalRaw));
     for (int _m = 0; _m < nMat; _m++) {
         if (recyc_pendingRaw[_m] > 0)
-            _batchLine.append(String.format(" %s:%.2ft", MaterialType.values()[_m], recyc_pendingRaw[_m]));
+            _batchLine.append(String.format(" %s:%.2ft", matNames[_m], recyc_pendingRaw[_m]));  // CE3.0: MAT[] replaces MaterialType.values()[_m]
     }
     recyclingBatchLog.add(_batchLine.toString());
 }
@@ -11858,7 +11950,7 @@ if (qty <= tier1Free) {
     // ── Residue & fill logs ───────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < main.MaterialType.values().length; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         residueLog.add(String.format("Day%6.1f|RESIDUE-IN  %.2ft %-8s T1|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), qty, mat.toString(),
             _t1c>0?_t1u/_t1c*100:0.0, tier2SharedCapacity>0?tier2UsedCapacity/tier2SharedCapacity*100:0.0));
@@ -11880,7 +11972,7 @@ if (neededFromTier2 <= tier2Free) {
     // ── Residue & fill logs ───────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < main.MaterialType.values().length; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         residueLog.add(String.format("Day%6.1f|RESIDUE-IN  %.2ft %-8s T1+T2|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), qty, mat.toString(),
             _t1c>0?_t1u/_t1c*100:0.0, tier2SharedCapacity>0?tier2UsedCapacity/tier2SharedCapacity*100:0.0));
@@ -11973,7 +12065,7 @@ traceln(String.format(
 				<EmbeddedObject>
 					<Id>1774861910173</Id>
 					<Name><![CDATA[combustionStart]]></Name>
-					<X>410</X><Y>320</Y>
+					<X>410</X><Y>310</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -12161,7 +12253,7 @@ traceln(String.format(
 				<EmbeddedObject>
 					<Id>1774862207652</Id>
 					<Name><![CDATA[wasteDrying]]></Name>
-					<X>480</X><Y>310</Y>
+					<X>495</X><Y>310</Y>
 					<Label><X>-30</X><Y>64</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -12254,7 +12346,7 @@ stagingAshCycleMass_t = WasteToBeBurned;]]></Code></Value>
 				<EmbeddedObject>
 					<Id>1774862244141</Id>
 					<Name><![CDATA[thermalDecomposition]]></Name>
-					<X>565</X><Y>310</Y>
+					<X>580</X><Y>310</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -12343,7 +12435,7 @@ stagingAshCycleMass_t = WasteToBeBurned;]]></Code></Value>
 				<EmbeddedObject>
 					<Id>1774862268497</Id>
 					<Name><![CDATA[slagFormation]]></Name>
-					<X>650</X><Y>310</Y>
+					<X>665</X><Y>310</Y>
 					<Label><X>-36</X><Y>62</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -12432,7 +12524,7 @@ stagingAshCycleMass_t = WasteToBeBurned;]]></Code></Value>
 				<EmbeddedObject>
 					<Id>1774862387846</Id>
 					<Name><![CDATA[CombustionSink]]></Name>
-					<X>735</X><Y>320</Y>
+					<X>1005</X><Y>310</Y>
 					<Label><X>-20</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -12514,7 +12606,7 @@ send("CombustionFinished", this);]]></Code>
 					<Id>9991001001</Id>
 					<Name><![CDATA[ashTransportToBrickKiln]]></Name>
 					<Description><![CDATA[COMBUSTION DES — Step 5/7: Ash transport to brick kiln (tri 1, 2, 4 h). Internal BIWASE logistics: forklift movement of ash/slag hopper to tunnel kiln area. ESCAR: ash collected every 90-120 min by forklift (Photo 4, p.115). Entry action stages stagingAshCycleMass_t. Only bottom ash fraction (bottomAsh_massFraction=0.25) continues to brickProduction; fly ash (0.04) routes via flyAshToLandfill.]]></Description>
-					<X>740</X><Y>310</Y>
+					<X>750</X><Y>310</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -12572,7 +12664,7 @@ send("CombustionFinished", this);]]></Code>
 					<Id>9991001002</Id>
 					<Name><![CDATA[brickProduction]]></Name>
 					<Description><![CDATA[COMBUSTION DES — Step 6/7: Brick production (tri 2, 4, 8 h). Bottom ash + WW treatment sludge fired in tunnel kiln. ESCAR p.70: 100,000 bricks/day capacity. Only bottom ash fraction (bottomAsh_massFraction=0.25) enters here. Exit action: brickMass = stagingAshCycleMass_t * bottomAsh_massFraction * brickYield_tPerTAsh; revenue credited to brickRevenues and financialBalance. [xxx: brickYield and brickPrice are ILLUSTRATIVE — replace before submission]]]></Description>
-					<X>830</X><Y>310</Y>
+					<X>835</X><Y>310</Y>
 					<Label><X>-50</X><Y>62</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -12710,7 +12802,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 				<EmbeddedObject>
 					<Id>9982001001</Id>
 					<Name><![CDATA[recyclStart]]></Name>
-					<X>410</X><Y>450</Y>
+					<X>410</X><Y>440</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -13063,7 +13155,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 				<EmbeddedObject>
 					<Id>9982001006</Id>
 					<Name><![CDATA[recyclSink]]></Name>
-					<X>820</X><Y>450</Y>
+					<X>820</X><Y>440</Y>
 					<Label><X>-20</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -13083,7 +13175,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 						<Parameter>
 							<Name><![CDATA[onEnter]]></Name>
 							<Value Class="CodeValue">
-								<Code><![CDATA[// Recycling DES visualization complete — accounting already done in recyclingProcessing()\nStringBuilder _sb = new StringBuilder();\n_sb.append(String.format(\"[RECYCL-BATCH t=%.1fd]\", time(DAY)));\nfor (int _m = 0; _m < main.MaterialType.values().length; _m++) {\n    if (recyc_pendingRaw[_m] > 0) {\n        double _eff = main.conversionEffPerMat[_m];\n        _sb.append(String.format(\" | %s: raw=%.2ft conv=%.2ft pw=%.2ft\",\n            main.MAT[_m], recyc_pendingRaw[_m],\n            recyc_pendingRaw[_m]*_eff, recyc_pendingProcessWaste[_m]));\n    }\n}\ntraceln(_sb.toString());]]></Code>
+								<Code><![CDATA[// Recycling DES visualization complete — accounting already done in recyclingProcessing()\nStringBuilder _sb = new StringBuilder();\n_sb.append(String.format(\"[RECYCL-BATCH t=%.1fd]\", time(DAY)));\nfor (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) {\n    if (recyc_pendingRaw[_m] > 0) {\n        double _eff = main.conversionEffPerMat[_m];\n        _sb.append(String.format(\" | %s: raw=%.2ft conv=%.2ft pw=%.2ft\",\n            matNames[_m], recyc_pendingRaw[_m],\n            recyc_pendingRaw[_m]*_eff, recyc_pendingProcessWaste[_m]));\n    }\n}\ntraceln(_sb.toString());]]></Code>
 							</Value>
 						</Parameter>
 						<Parameter><Name><![CDATA[destroyEntity]]></Name></Parameter>
@@ -13107,7 +13199,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 					<Id>9983001001</Id>
 					<Name><![CDATA[pwStart]]></Name>
 					<Description><![CDATA[PROCESS WASTE DES — Step 1/4: Source (visualization only). Fired monthly by recyclingProcessing() via pwStart.inject() when process waste > 0. This DES does NOT model physical truck transport — the GarbageTruck agent handles external collection. It visualizes what happens to recycling residue (process waste) already inside BIWASE after processing. Chain: pwStart → pwTransport (internal bin movement, 1–4 h) → pwLandfillDeposit (deposit at Da Phuoc landfill, 0.5–2 h) → pwSink (LCA impacts applied from pw_pending* buffers). Tonnage and LCA values are staged in pw_pending* variables before injection.]]></Description>
-					<X>410</X><Y>540</Y>
+					<X>410</X><Y>530</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -13316,7 +13408,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 					<Id>9983001004</Id>
 					<Name><![CDATA[pwSink]]></Name>
 					<Description><![CDATA[PROCESS WASTE DES — Step 4/4: Sink — LCA accounting trigger. On entity arrival, staged LCA impacts (pw_pending*) are applied to cumulative accumulators: GWPActualProcess, HTPActualProcess, LUPActualProcess, CEDActualProcess. All pw_pending* buffers and recyc_pending* arrays are reset. This is the ONLY step where numbers change — all prior steps are timing and visualization only.]]></Description>
-					<X>650</X><Y>540</Y>
+					<X>650</X><Y>530</Y>
 					<Label><X>-20</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
@@ -14462,42 +14554,354 @@ traceln(String.format("[DES-NON_FERROUS t=%.1fd] processing batch complete", tim
 					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
 					<QuantityColumn></QuantityColumn>
 				</EmbeddedObject>
-										<EmbeddedObject Class="SourceOfAgents">
+				<EmbeddedObject>
 					<Id>8889000200001</Id>
 					<Name><![CDATA[compost_Start]]></Name>
 					<X>850</X><Y>500</Y>
 					<Label><X>-40</X><Y>-20</Y></Label>
-					<PublicFlag>false</PublicFlag><PresentationFlag>true</PresentationFlag><ShowLabel>true</ShowLabel>
-					<Description><![CDATA[COMPOSTING DES Step 1/4: Source. Fired monthly by recyclingProcessing() when ORGANIC_WASTE raw buffer > 0. Chain: compost_Start → compost_Sorting (4–8h) → compost_Maturation (7–14d) → compost_Sink. conversionEffPerMat[5]=0.20 (ESCAR 5:1).]]></Description>
-					<InjectionRateCode Class="CodeValue"><Code><![CDATA[1.0]]></Code></InjectionRateCode>
-					<MaximumArrivalsCode Class="CodeValue"><Code><![CDATA[1000000]]></Code></MaximumArrivalsCode>
-					<ArrivalsOnStart>false</ArrivalsOnStart>
-					<NewEntityClass><PackageName><![CDATA[com.anylogic.engine]]></PackageName><ClassName><![CDATA[Agent]]></ClassName></NewEntityClass>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Description><![CDATA[COMPOSTING DES Step 1/4: Source. Fired monthly by recyclingProcessing() when ORGANIC_WASTE raw buffer > 0. Chain: compost_Start -> compost_Sorting (4-8h) -> compost_Maturation (7-14d) -> compost_Sink. conversionEffPerMat[5]=0.20 (ESCAR 5:1).]]></Description>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Source]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Source]]></ClassName>
+							<ItemName><![CDATA[1412336242928]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[arrivalType]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[rate]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[interarrivalTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[36500]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[firstArrivalMode]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[firstArrivalTime]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[rateSchedule]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[modifyRate]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[rateExpression]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[arrivalSchedule]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[setAgentParametersFromDB]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[databaseTable]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[arrivalDate]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[multipleEntitiesPerArrival]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[entitiesPerArrival]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[limitArrivals]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[true]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[maxArrivals]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[0]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationType]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationX]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationY]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationZ]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationLatitude]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationLongitude]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationGeoPlaceName]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationXYZInNetwork]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationNetwork]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationLevel]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationNode]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[locationAttractor]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[speed]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[newEntity]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[changeDimensions]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[length]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[width]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[height]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[enableCustomStartTime]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[startTime]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[addToCustomPopulation]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[population]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[pushProtocol]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[discardHangingEntities]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onBeforeArrival]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onAtExit]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onExit]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onDiscard]]></Name>
+						</Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue">
+						<Code><![CDATA[100]]></Code>
+					</Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</ColumnCode>
+					<RowCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</RowCode>
+					<LocationNameCode Class="CodeValue">
+						<Code><![CDATA[""]]></Code>
+					</LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>8889000200009</Id>
+						<TableReference>
+						</TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn>
+					</QuantityColumn>
 				</EmbeddedObject>
-				<EmbeddedObject Class="Delay">
+				<EmbeddedObject>
 					<Id>8889000200002</Id>
 					<Name><![CDATA[compost_Sorting]]></Name>
 					<X>930</X><Y>500</Y>
 					<Label><X>-30</X><Y>-20</Y></Label>
-					<PublicFlag>false</PublicFlag><PresentationFlag>true</PresentationFlag><ShowLabel>true</ShowLabel>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
 					<Description><![CDATA[Contamination removal + pre-sorting of organic fraction (removes non-biodegradables). Duration: tri(4,6,8)h. Sorting residue goes to landfill per pw_landfillSharePerMat[5].]]></Description>
-					<DelayTimeCode Class="CodeValue"><Code><![CDATA[tri(4, 6, 8)]]></Code></DelayTimeCode>
-					<DelayTimeUnits><![CDATA[HOUR]]></DelayTimeUnits>
-					<Capacity>1</Capacity>
-					<OnEnterAction><![CDATA[traceln(String.format("[COMPOST-SORT t=%.1fd] %.3ft organic | yield=%.3ft compost",
-    time(DAY), composting_stagingMass_t, composting_stagingMass_t * main.conversionEffPerMat[5]));]]></OnEnterAction>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[type]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(4, 6, 8)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[capacity]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[1]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[true]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[entityLocation]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[pushProtocol]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[restoreEntityLocationOnExit]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[forceStatisticsCollection]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onEnter]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[traceln(String.format("[COMPOST-SORT t=%.1fd] %.3ft organic | yield=%.3ft compost",
+    time(DAY), composting_stagingMass_t, composting_stagingMass_t * main.conversionEffPerMat[5]));]]></Code></Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onAtExit]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onExit]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onRemove]]></Name>
+						</Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue">
+						<Code><![CDATA[100]]></Code>
+					</Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</ColumnCode>
+					<RowCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</RowCode>
+					<LocationNameCode Class="CodeValue">
+						<Code><![CDATA[""]]></Code>
+					</LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>8889000200010</Id>
+						<TableReference>
+						</TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn>
+					</QuantityColumn>
 				</EmbeddedObject>
-				<EmbeddedObject Class="Delay">
+				<EmbeddedObject>
 					<Id>8889000200003</Id>
 					<Name><![CDATA[compost_Maturation]]></Name>
 					<X>1010</X><Y>500</Y>
 					<Label><X>-30</X><Y>-20</Y></Label>
-					<PublicFlag>false</PublicFlag><PresentationFlag>true</PresentationFlag><ShowLabel>true</ShowLabel>
-					<Description><![CDATA[Aerobic composting 7–14 days. Compost sold to agricultural Receiver. Revenue credited. LCA: GWPWasteToRecycling[5] applied. Duration: tri(168,252,336)h.]]></Description>
-					<DelayTimeCode Class="CodeValue"><Code><![CDATA[tri(168, 252, 336)]]></Code></DelayTimeCode>
-					<DelayTimeUnits><![CDATA[HOUR]]></DelayTimeUnits>
-					<Capacity>1</Capacity>
-					<OnExitAction><![CDATA[double compostMass_t = composting_stagingMass_t * main.conversionEffPerMat[5];
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Description><![CDATA[Aerobic composting 7-14 days. Compost sold to agricultural Receiver. Revenue credited. LCA: GWPWasteToRecycling[5] applied. Duration: tri(168,252,336)h.]]></Description>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Delay]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Delay]]></ClassName>
+							<ItemName><![CDATA[1412336242930]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[type]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[delayTime]]></Name>
+							<Value Class="CodeUnitValue">
+								<Code><![CDATA[triangular(168, 252, 336)]]></Code>
+								<Unit Class="TimeUnits"><![CDATA[HOUR]]></Unit>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[capacity]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[1]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[maximumCapacity]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[true]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[entityLocation]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[pushProtocol]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[restoreEntityLocationOnExit]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[forceStatisticsCollection]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onEnter]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onAtExit]]></Name>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onExit]]></Name>
+							<Value Class="CodeValue"><Code><![CDATA[double compostMass_t = composting_stagingMass_t * main.conversionEffPerMat[5];
 double revenue = compostMass_t * compostPrice_SGD_t;
 compostProduced_t += compostMass_t;
 compostRevenue    += revenue;
@@ -14507,20 +14911,96 @@ totalRevenues     += revenue;
 double gwpCompost_kg = composting_stagingMass_t * 1000.0 * main.GWPWasteToRecycling[5];
 GWPActualProcess += gwpCompost_kg;
 GWPActualTotal    = GWPActualTransport + GWPActualProcess;
-traceln(String.format("[COMPOST-MATURE t=%.1fd] %.3ft organic → %.3ft compost | revenue=%.2f SGD | GWP=%.2f kg CO2-eq",
-    time(DAY), composting_stagingMass_t, compostMass_t, revenue, gwpCompost_kg));]]></OnExitAction>
+traceln(String.format("[COMPOST-MATURE t=%.1fd] %.3ft organic -> %.3ft compost | revenue=%.2f SGD | GWP=%.2f kg CO2-eq",
+    time(DAY), composting_stagingMass_t, compostMass_t, revenue, gwpCompost_kg));]]></Code></Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[onRemove]]></Name>
+						</Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue">
+						<Code><![CDATA[100]]></Code>
+					</Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</ColumnCode>
+					<RowCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</RowCode>
+					<LocationNameCode Class="CodeValue">
+						<Code><![CDATA[""]]></Code>
+					</LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>8889000200011</Id>
+						<TableReference>
+						</TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn>
+					</QuantityColumn>
 				</EmbeddedObject>
-				<EmbeddedObject Class="SinkOfAgents">
+				<EmbeddedObject>
 					<Id>8889000200004</Id>
 					<Name><![CDATA[compost_Sink]]></Name>
 					<X>1090</X><Y>500</Y>
 					<Label><X>-20</X><Y>-20</Y></Label>
-					<PublicFlag>false</PublicFlag><PresentationFlag>true</PresentationFlag><ShowLabel>true</ShowLabel>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
 					<Description><![CDATA[COMPOSTING DES Step 4/4: Sink. Revenue + LCA credited in compost_Maturation.onExit.]]></Description>
-					<OnEnterAction><![CDATA[traceln(String.format("[COMPOST-SINK t=%.1fd] cycle done | cumCompost=%.3ft | cumRevenue=%.2f SGD",
-    time(DAY), compostProduced_t, compostRevenue));]]></OnEnterAction>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+						<ClassName><![CDATA[Sink]]></ClassName>
+					</ActiveObjectClass>
+					<GenericParameterSubstitute>
+						<GenericParameterSubstituteReference>
+							<PackageName><![CDATA[com.anylogic.libraries.processmodeling]]></PackageName>
+							<ClassName><![CDATA[Sink]]></ClassName>
+							<ItemName><![CDATA[1412336242929]]></ItemName>
+						</GenericParameterSubstituteReference>
+					</GenericParameterSubstitute>
+					<Parameters>
+						<Parameter>
+							<Name><![CDATA[onEnter]]></Name>
+							<Value Class="CodeValue">
+								<Code><![CDATA[traceln(String.format("[COMPOST-SINK t=%.1fd] cycle done | cumCompost=%.3ft | cumRevenue=%.2f SGD",
+    time(DAY), compostProduced_t, compostRevenue));]]></Code>
+							</Value>
+						</Parameter>
+						<Parameter>
+							<Name><![CDATA[destroyEntity]]></Name>
+						</Parameter>
+					</Parameters>
+					<ReplicationFlag>false</ReplicationFlag>
+					<Replication Class="CodeValue">
+						<Code><![CDATA[100]]></Code>
+					</Replication>
+					<CollectionType>ARRAY_LIST_BASED</CollectionType>
+					<InitialLocationType>XYZ</InitialLocationType>
+					<ColumnCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</ColumnCode>
+					<RowCode Class="CodeValue">
+						<Code><![CDATA[0]]></Code>
+					</RowCode>
+					<LocationNameCode Class="CodeValue">
+						<Code><![CDATA[""]]></Code>
+					</LocationNameCode>
+					<InitializationType>SPECIFIED_NUMBER</InitializationType>
+					<InitializationDatabaseTableQuery>
+						<Id>8889000200012</Id>
+						<TableReference>
+						</TableReference>
+					</InitializationDatabaseTableQuery>
+					<InitializationDatabaseType>ONE_AGENT_PER_DATABASE_RECORD</InitializationDatabaseType>
+					<QuantityColumn>
+					</QuantityColumn>
 				</EmbeddedObject>
-</EmbeddedObjects>
+			</EmbeddedObjects>
 
 			<Presentation>
 				<Level>
@@ -16628,11 +17108,26 @@ traceln(String.format("[TRUCK%d-LOADED] t=%.2fd | jolly arrived at %s | payload=
 // (Normal distribution). Quality >= ferrousReceiver.minAcceptableQuality → IS price;
 // Quality < threshold → informal smelter price (lowerQualityPriceFactor × ISPrice).
 // Literature basis: Nguyen et al. 2019 (RC&R); Wilson et al. 2006. [ASSUMED / ILLUSTRATIVE]
+public double getFerrousQualityThreshold() {
+    for (int _i = 0; _i < main.receivers.size(); _i++) {
+        Receiver _r = (Receiver)main.receivers.get(_i);
+        if (_r.myMaterial == MaterialType.FERROUS_METAL) return _r.minAcceptableQuality;
+    }
+    return 0.70; // default threshold if no FERROUS_METAL receiver found
+}
 ]]></AdditionalClassCode>
 			<StartupCode><![CDATA[
 traceln("[VECHAI] Init: weeklyScrapMean=" + weeklyScrapMean_t + " t/wk | qualMean=" + qualityMean + " ± " + qualityStdDev);
 ]]></StartupCode>
 			<Generic>false</Generic>
+			<GenericParameter>
+				<Id>8888900000001</Id>
+				<Name><![CDATA[8888900000001]]></Name>
+				<GenericParameterValue Class="CodeValue">
+					<Code><![CDATA[T extends Agent]]></Code>
+				</GenericParameterValue>
+				<GenericParameterLabel><![CDATA[Generic parameter:]]></GenericParameterLabel>
+			</GenericParameter>
 			<FlowChartsUsage>ENTITY</FlowChartsUsage>
 			<SamplesToKeep>100</SamplesToKeep>
 			<LimitNumberOfArrayElements>false</LimitNumberOfArrayElements>
@@ -16651,6 +17146,58 @@ traceln("[VECHAI] Init: weeklyScrapMean=" + weeklyScrapMean_t + " t/wk | qualMea
 				<PhysicalHeight Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="LengthUnits"><![CDATA[METER]]></Unit></PhysicalHeight>
 				<IgnoreOnMouseClick>false</IgnoreOnMouseClick>
 			</AgentProperties>
+			<EnvironmentProperties>
+					<EnableSteps>false</EnableSteps>
+					<StepDurationCode Class="CodeUnitValue">
+						<Code><![CDATA[1.0]]></Code>
+						<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
+					</StepDurationCode>
+					<SpaceType>CONTINUOUS</SpaceType>
+					<WidthCode><![CDATA[500]]></WidthCode>
+					<HeightCode><![CDATA[500]]></HeightCode>
+					<ZHeightCode><![CDATA[0]]></ZHeightCode>
+					<ColumnsCountCode><![CDATA[100]]></ColumnsCountCode>
+					<RowsCountCode><![CDATA[100]]></RowsCountCode>
+					<NeigborhoodType>MOORE</NeigborhoodType>
+					<LayoutType>USER_DEF</LayoutType>
+					<NetworkType>USER_DEF</NetworkType>
+					<ConnectionsPerAgentCode><![CDATA[2]]></ConnectionsPerAgentCode>
+					<ConnectionsRangeCode><![CDATA[50]]></ConnectionsRangeCode>
+					<NeighborLinkFractionCode><![CDATA[0.95]]></NeighborLinkFractionCode>
+					<MCode><![CDATA[10]]></MCode>
+			</EnvironmentProperties>
+			<DatasetsCreationProperties>
+				<AutoCreate>true</AutoCreate>
+					<Id>8888900000002</Id>
+					<OccurrenceAtTime>true</OccurrenceAtTime>
+					<OccurrenceDate>1772092800000</OccurrenceDate>
+					<OccurrenceTime Class="CodeUnitValue">
+						<Code><![CDATA[0]]></Code>
+						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+					</OccurrenceTime>
+					<RecurrenceCode Class="CodeUnitValue">
+						<Code><![CDATA[1]]></Code>
+						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+					</RecurrenceCode>
+			</DatasetsCreationProperties>
+			<ScaleRuler>
+				<Id>8888900000003</Id>
+				<Name><![CDATA[scale]]></Name>
+				<X>0</X><Y>-150</Y>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>false</PresentationFlag>
+				<ShowLabel>false</ShowLabel>
+				<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+				<Length>100</Length>
+				<Rotation>0</Rotation>
+				<ScaleType>BASED_ON_LENGTH</ScaleType>
+				<ModelLength>10</ModelLength>
+				<LengthUnits>METER</LengthUnits>
+				<Scale>10</Scale>
+				<InheritedFromParentAgentType>true</InheritedFromParentAgentType>
+			</ScaleRuler>
+			<CurrentLevel>8888900000004</CurrentLevel>
+			<ConnectionsId>8888900000005</ConnectionsId>
 			<Variables>
 				<Variable Class="PlainVariable">
 					<Id>8888000000010</Id><Name><![CDATA[materialQuality]]></Name>
@@ -16818,6 +17365,7 @@ traceln(String.format("[VECHAI] t=%.1fd SOLD-INFORMAL: %.3ft | q=%.3f < %.3f | f
 					<Points><Point><X>0</X><Y>0</Y></Point><Point><X>0</X><Y>120</Y></Point></Points>
 					<IconOffset>20.0</IconOffset>
 					<Properties Source="8888000000100" Target="8888000000101" Trigger="timeout">
+						<Action><![CDATA[]]></Action>
 						<Timeout Class="CodeUnitValue"><Code><![CDATA[7]]></Code><Unit Class="TimeUnits"><![CDATA[DAY]]></Unit></Timeout>
 						<Condition><![CDATA[true]]></Condition>
 						<Rate Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="RateUnits"><![CDATA[PER_WEEK]]></Unit></Rate>
@@ -16835,6 +17383,7 @@ traceln(String.format("[VECHAI] t=%.1fd SOLD-INFORMAL: %.3ft | q=%.3f < %.3f | f
 					<Points><Point><X>0</X><Y>0</Y></Point><Point><X>0</X><Y>70</Y></Point></Points>
 					<IconOffset>20.0</IconOffset>
 					<Properties Source="8888000000101" Target="8888000000102" Trigger="condition">
+						<Action><![CDATA[]]></Action>
 						<Timeout Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit></Timeout>
 						<Condition><![CDATA[scrapThisCycle_t > 0]]></Condition>
 						<Rate Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit></Rate>
@@ -16853,14 +17402,9 @@ traceln(String.format("[VECHAI] t=%.1fd SOLD-INFORMAL: %.3ft | q=%.3f < %.3f | f
 					<Points><Point><X>0</X><Y>0</Y></Point><Point><X>150</X><Y>0</Y></Point><Point><X>150</X><Y>90</Y></Point></Points>
 					<IconOffset>30.0</IconOffset>
 					<Properties Source="8888000000102" Target="8888000000103" Trigger="condition">
+						<Action><![CDATA[]]></Action>
 						<Timeout Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit></Timeout>
-						<Condition><![CDATA[{
-double _thr = 0.70;
-for (int _i = 0; _i < main.receivers.size(); _i++) {
-    Receiver _r = (Receiver)main.receivers.get(_i);
-    if (_r.myMaterial == MaterialType.FERROUS_METAL) { _thr = _r.minAcceptableQuality; break; }
-}
-materialQuality >= _thr}]]></Condition>
+						<Condition><![CDATA[materialQuality >= getFerrousQualityThreshold()]]></Condition>
 						<Rate Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit></Rate>
 						<MessageType><![CDATA[Object]]></MessageType>
 						<DefaultTransition>false</DefaultTransition>
@@ -16877,14 +17421,9 @@ materialQuality >= _thr}]]></Condition>
 					<Points><Point><X>0</X><Y>0</Y></Point><Point><X>-100</X><Y>0</Y></Point><Point><X>-100</X><Y>90</Y></Point></Points>
 					<IconOffset>20.0</IconOffset>
 					<Properties Source="8888000000102" Target="8888000000104" Trigger="condition">
+						<Action><![CDATA[]]></Action>
 						<Timeout Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit></Timeout>
-						<Condition><![CDATA[{
-double _thr = 0.70;
-for (int _i = 0; _i < main.receivers.size(); _i++) {
-    Receiver _r = (Receiver)main.receivers.get(_i);
-    if (_r.myMaterial == MaterialType.FERROUS_METAL) { _thr = _r.minAcceptableQuality; break; }
-}
-materialQuality < _thr}]]></Condition>
+						<Condition><![CDATA[materialQuality < getFerrousQualityThreshold()]]></Condition>
 						<Rate Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit></Rate>
 						<MessageType><![CDATA[Object]]></MessageType>
 						<DefaultTransition>false</DefaultTransition>
@@ -16900,6 +17439,7 @@ materialQuality < _thr}]]></Condition>
 					<Points><Point><X>0</X><Y>0</Y></Point><Point><X>0</X><Y>-490</Y></Point><Point><X>-175</X><Y>-490</Y></Point></Points>
 					<IconOffset>20.0</IconOffset>
 					<Properties Source="8888000000103" Target="8888000000100" Trigger="condition">
+						<Action><![CDATA[]]></Action>
 						<Timeout Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit></Timeout>
 						<Condition><![CDATA[true]]></Condition>
 						<Rate Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit></Rate>
@@ -16917,6 +17457,7 @@ materialQuality < _thr}]]></Condition>
 					<Points><Point><X>0</X><Y>0</Y></Point><Point><X>-40</X><Y>0</Y></Point><Point><X>-40</X><Y>-490</Y></Point><Point><X>115</X><Y>-490</Y></Point></Points>
 					<IconOffset>20.0</IconOffset>
 					<Properties Source="8888000000104" Target="8888000000100" Trigger="condition">
+						<Action><![CDATA[]]></Action>
 						<Timeout Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit></Timeout>
 						<Condition><![CDATA[true]]></Condition>
 						<Rate Class="CodeUnitValue"><Code><![CDATA[1]]></Code><Unit Class="RateUnits"><![CDATA[PER_SECOND]]></Unit></Rate>
@@ -16929,16 +17470,55 @@ materialQuality < _thr}]]></Condition>
 				</StatechartElement>
 			</StatechartElements>
 			<Functions/>
-			<AgentLinks/>
+			<AgentLinks>
+				<AgentLink>
+					<Id>8888900000005</Id>
+					<Name><![CDATA[connections]]></Name>
+					<X>50</X><Y>-50</Y>
+					<Label><X>15</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<HandleReceiveInConnections>false</HandleReceiveInConnections>
+					<AgentLinkType>COLLECTION_OF_LINKS</AgentLinkType>
+					<AgentLinkBidirectional>true</AgentLinkBidirectional>
+					<MessageType><![CDATA[Object]]></MessageType>
+					<LineStyle>SOLID</LineStyle>
+					<LineWidth>1</LineWidth>
+					<LineColor>-16777216</LineColor>
+					<LineZOrder>UNDER_AGENTS</LineZOrder>
+					<LineArrow>NONE</LineArrow>
+					<LineArrowPosition>END</LineArrowPosition>
+				</AgentLink>
+			</AgentLinks>
+			<ContainerLinks>
+				<ContainerLink>
+					<Id>8888900000006</Id>
+					<Name><![CDATA[main]]></Name>
+					<X>50</X><Y>-100</Y>
+					<Label><X>15</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<ActiveObjectClass>
+						<PackageName><![CDATA[ma1]]></PackageName>
+						<ClassName><![CDATA[Main]]></ClassName>
+					</ActiveObjectClass>
+				</ContainerLink>
+			</ContainerLinks>
 			<Presentation>
-				<EmbeddedObjectPresentation>
-					<Id>8888000000200</Id>
-					<DrawMode>GIS</DrawMode>
-					<GISScaleForRealEmbeddedObjectPresentationSize>1000</GISScaleForRealEmbeddedObjectPresentationSize>
-					<GISScaleForFixedEmbeddedObjectPresentationSize>1000000000</GISScaleForFixedEmbeddedObjectPresentationSize>
-					<Latitude>0.0</Latitude>
-					<Longitude>0.0</Longitude>
-				</EmbeddedObjectPresentation>
+				<Level>
+					<Id>8888900000004</Id>
+					<Name><![CDATA[level]]></Name>
+					<X>0</X><Y>0</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>true</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+					<Z>0</Z>
+					<LevelVisibility>HIDE_NON_CURRENT</LevelVisibility>
+				</Level>
 			</Presentation>
 		</ActiveObjectClass>
 </ActiveObjectClasses>
@@ -17111,7 +17691,7 @@ materialQuality < _thr}]]></Condition>
 	<ModelResources>
 		<Resource>
 			<Id>1774771731589</Id>
-			<Path><![CDATA[03APRIL.xlsx]]></Path>
+			<Path><![CDATA[20APRIL.xlsx]]></Path>
 			<ReferencedFromUserCode>false</ReferencedFromUserCode>
 			<Location>FILE_SYSTEM</Location>
 		</Resource>
