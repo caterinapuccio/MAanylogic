@@ -478,7 +478,7 @@ public void validateExcelConnections() {
     }
 
     // ── Companies_Listing — Receivers (rows 68-72) ───────────────────────────
-    String[] recNames = {"Receiver_Plastic","Receiver_Paper","Receiver_Ferrous","Receiver_Textile","Receiver_NonFerrous"};
+    String[] recNames = {"Receiver_Plastic","Receiver_Paper","Receiver_Ferrous","Receiver_Textile","Receiver_NonFerrous","Receiver_Organic_Agri"};
     for (int i = 0; i < receivers.size(); i++) {
         Receiver r = receivers.get(i);
         int row = 68 + i;
@@ -489,7 +489,7 @@ public void validateExcelConnections() {
         if (r.processingEfficiency < 0) {
             validationErrors.add(new String[]{
                 recNames[i], "processingEfficiency", "recycling_and processingfactors",
-                "C", String.valueOf(new int[]{5,7,9,11,13}[i]),
+                "C", String.valueOf(new int[]{5,7,9,11,13,15}[i]),
                 String.valueOf(r.processingEfficiency),
                 "SENTINEL -1.0: value not loaded from Excel. Check sheet 'recycling_and processingfactors' col C.",
                 "(0, 1]"
@@ -653,28 +653,29 @@ public void exportValidationReport() {
         int mapRow = 1;
         String[][] connectionMap = {
             // {variable, sheet, col, rows, agent, range, note}
-            {"conversionEffPerMat[0..4]","Materials","B","3-7","Intermediate","(0,1]","per material"},
-            {"GWPVirginPerKg[0..4]","Materials","C","3-7","Main",">=0","per material"},
-            {"GWPWasteToRecycling[0..4]","Materials","D","3-7","Main",">=0","per material"},
-            {"GWPWasteToLandfill[0..4]","Materials","E","3-7","Main",">=0","per material"},
-            {"HTPVirginPerKg[0..4]","Materials","F","3-7","Main",">=0","per material"},
-            {"HTPWasteToRecycling[0..4]","Materials","G","3-7","Main",">=0","per material"},
-            {"HTPWasteToLandfill[0..4]","Materials","H","3-7","Main",">=0","per material"},
-            {"LUPVirginPerKg[0..4]","Materials","I","3-7","Main",">=0","per material"},
-            {"LUPWasteToRecycling[0..4]","Materials","J","3-7","Main",">=0","per material"},
-            {"LUPWasteToLandfill[0..4]","Materials","K","3-7","Main",">=0","per material"},
-            {"CEDVirginPerKg[0..4]","Materials","L","3-7","Main",">=0","per material"},
-            {"CEDWasteToRecycling[0..4]","Materials","M","3-7","Main",">=0","per material"},
-            {"CEDWasteToLandfill[0..4]","Materials","N","3-7","Main",">=0","per material"},
-            {"priceVirginPerMat[0..4]","Materials","O","3-7","Main",">0 SGD/t","per material"},
-            {"priceSecondaryPerMat[0..4]","Materials","P","3-7","Main",">0 SGD/t","per material"},
-            {"costLandfillPerMat[0..4]","Materials","Q","3-7","Main",">=0 SGD/t","per material"},
-            {"pricePaidToProvider[0..4]","Materials","V","3-7","Main","any SGD/t","per material"},
+            {"conversionEffPerMat[0..4]","Materials","B","3-8","Intermediate","(0,1]","per material"},
+            {"GWPVirginPerKg[0..4]","Materials","C","3-8","Main",">=0","per material"},
+            {"GWPWasteToRecycling[0..4]","Materials","D","3-8","Main",">=0","per material"},
+            {"GWPWasteToLandfill[0..4]","Materials","E","3-8","Main",">=0","per material"},
+            {"HTPVirginPerKg[0..4]","Materials","F","3-8","Main",">=0","per material"},
+            {"HTPWasteToRecycling[0..4]","Materials","G","3-8","Main",">=0","per material"},
+            {"HTPWasteToLandfill[0..4]","Materials","H","3-8","Main",">=0","per material"},
+            {"LUPVirginPerKg[0..4]","Materials","I","3-8","Main",">=0","per material"},
+            {"LUPWasteToRecycling[0..4]","Materials","J","3-8","Main",">=0","per material"},
+            {"LUPWasteToLandfill[0..4]","Materials","K","3-8","Main",">=0","per material"},
+            {"CEDVirginPerKg[0..4]","Materials","L","3-8","Main",">=0","per material"},
+            {"CEDWasteToRecycling[0..4]","Materials","M","3-8","Main",">=0","per material"},
+            {"CEDWasteToLandfill[0..4]","Materials","N","3-8","Main",">=0","per material"},
+            {"priceVirginPerMat[0..4]","Materials","O","3-8","Main",">0 SGD/t","per material"},
+            {"priceSecondaryPerMat[0..4]","Materials","P","3-8","Main",">0 SGD/t","per material"},
+            {"costLandfillPerMat[0..4]","Materials","Q","3-8","Main",">=0 SGD/t","per material"},
+            {"pricePaidToProvider[0..4]","Materials","V","3-8","Main","any SGD/t","per material"},
             {"processingEffPerMat[0]","recycling_and processingfactors","C","5","Receiver_Plastic","(0,1]",""},
             {"processingEffPerMat[1]","recycling_and processingfactors","C","7","Receiver_Paper","(0,1]",""},
             {"processingEffPerMat[2]","recycling_and processingfactors","C","9","Receiver_Ferrous","(0,1]",""},
             {"processingEffPerMat[3]","recycling_and processingfactors","C","11","Receiver_Textile","(0,1]",""},
             {"processingEffPerMat[4]","recycling_and processingfactors","C","13","Receiver_NonFerrous","(0,1]",""},
+            {"processingEffPerMat[5]","recycling_and processingfactors","C","15","Receiver_Organic_Agri","(0,1]","ORGANIC_WASTE composting efficiency"},
             {"totalStorageCapacity","Intermediate","B","3","Intermediate",">0 t",""},
             {"tier1Pct","Intermediate","B","4","Intermediate","(0,1)",""},
             {"capexPerStorageUnit","Intermediate","B","7","Intermediate",">0 SGD/t",""},
