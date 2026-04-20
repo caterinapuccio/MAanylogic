@@ -11616,7 +11616,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
     // ── Tier fill snapshot ─────────────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < 6  // CE3.0: OptionList .values() not callable through instance ref; hardcoded = MaterialType enum size; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         tierFillLog.add(String.format("Day%6.1f|ACCEPT %-8s +%.2ft|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), mat.toString(), qty,
             _t1c > 0 ? _t1u/_t1c*100 : 0.0,
@@ -11688,7 +11688,7 @@ double gwpCollection = main.transportGWPCalc(qty, distKm);
     // ── Tier fill snapshot ─────────────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < 6  // CE3.0: OptionList .values() not callable through instance ref; hardcoded = MaterialType enum size; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         tierFillLog.add(String.format("Day%6.1f|ACCEPT %-8s +%.2ft|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), mat.toString(), qty,
             _t1c > 0 ? _t1u/_t1c*100 : 0.0,
@@ -11722,7 +11722,8 @@ return false;]]></Body>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
-					<Body><![CDATA[int nMat = 6;  // CE3.0: OptionList .values() not supported in agent code; hardcoded = MaterialType.values().length
+					<Body><![CDATA[String[] matNames = {"PLASTIC_SCRAP","PAPER_WASTE","FERROUS_METAL","TEXTILE_WASTE","NON_FERROUS_METAL","ORGANIC_WASTE"};  // CE3.0: local copy — keep in sync with MaterialType enum
+int nMat = 6;  // CE3.0: OptionList .values() not supported in agent code; hardcoded = MaterialType.values().length
 for (int m = 0; m < nMat; m++) {
     double rawBuffer = recyclingStoragePerMat[m];
     if (rawBuffer <= 0) continue;
@@ -11777,13 +11778,13 @@ for (int m = 0; m < nMat; m++) {
     recyclingStoragePerMat[m] = 0;
 
     if (main.debugMode) traceln(String.format("Intermediate recyclingProcessing[%s]: raw=%.2f converted=%.2f waste=%.2f",
-        main.MAT[m], rawBuffer, converted, processWaste));
+        matNames[m], rawBuffer, converted, processWaste));
 }
 
 // ── Tier fill snapshot before reset (captures peak fill) ────────────────
 {
     double _t1u = 0, _t1c = 0;
-    for (int _m = 0; _m < 6  // CE3.0: OptionList .values() not callable through instance ref; hardcoded = MaterialType enum size; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+    for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
     tierFillLog.add(String.format("Day%6.1f|RESET  (recycle trigger)|T1:%3.0f%% T2:%3.0f%%",
         time(DAY),
         _t1c > 0 ? _t1u/_t1c*100 : 0.0,
@@ -11811,7 +11812,7 @@ for (int _m = 0; _m < nMat; _m++) {
     _batchLine.append(String.format(" %.3ft total |", _totalRaw));
     for (int _m = 0; _m < nMat; _m++) {
         if (recyc_pendingRaw[_m] > 0)
-            _batchLine.append(String.format(" %s:%.2ft", main.MAT[_m], recyc_pendingRaw[_m]));  // CE3.0: MAT[] replaces MaterialType.values()[_m]
+            _batchLine.append(String.format(" %s:%.2ft", matNames[_m], recyc_pendingRaw[_m]));  // CE3.0: MAT[] replaces MaterialType.values()[_m]
     }
     recyclingBatchLog.add(_batchLine.toString());
 }
@@ -11948,7 +11949,7 @@ if (qty <= tier1Free) {
     // ── Residue & fill logs ───────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < 6  // CE3.0: OptionList .values() not callable through instance ref; hardcoded = MaterialType enum size; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         residueLog.add(String.format("Day%6.1f|RESIDUE-IN  %.2ft %-8s T1|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), qty, mat.toString(),
             _t1c>0?_t1u/_t1c*100:0.0, tier2SharedCapacity>0?tier2UsedCapacity/tier2SharedCapacity*100:0.0));
@@ -11970,7 +11971,7 @@ if (neededFromTier2 <= tier2Free) {
     // ── Residue & fill logs ───────────────────────────────────────────────
     {
         double _t1u = 0, _t1c = 0;
-        for (int _m = 0; _m < 6  // CE3.0: OptionList .values() not callable through instance ref; hardcoded = MaterialType enum size; _m++) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
+        for (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) { _t1u += recyclingStoragePerMat[_m]; _t1c += tier1CapPerMat[_m]; }
         residueLog.add(String.format("Day%6.1f|RESIDUE-IN  %.2ft %-8s T1+T2|T1:%3.0f%% T2:%3.0f%%",
             time(DAY), qty, mat.toString(),
             _t1c>0?_t1u/_t1c*100:0.0, tier2SharedCapacity>0?tier2UsedCapacity/tier2SharedCapacity*100:0.0));
@@ -13173,7 +13174,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 						<Parameter>
 							<Name><![CDATA[onEnter]]></Name>
 							<Value Class="CodeValue">
-								<Code><![CDATA[// Recycling DES visualization complete — accounting already done in recyclingProcessing()\nStringBuilder _sb = new StringBuilder();\n_sb.append(String.format(\"[RECYCL-BATCH t=%.1fd]\", time(DAY)));\nfor (int _m = 0; _m < 6  // CE3.0: OptionList .values() not callable through instance ref; hardcoded = MaterialType enum size; _m++) {\n    if (recyc_pendingRaw[_m] > 0) {\n        double _eff = main.conversionEffPerMat[_m];\n        _sb.append(String.format(\" | %s: raw=%.2ft conv=%.2ft pw=%.2ft\",\n            main.MAT[_m], recyc_pendingRaw[_m],\n            recyc_pendingRaw[_m]*_eff, recyc_pendingProcessWaste[_m]));\n    }\n}\ntraceln(_sb.toString());]]></Code>
+								<Code><![CDATA[// Recycling DES visualization complete — accounting already done in recyclingProcessing()\nStringBuilder _sb = new StringBuilder();\n_sb.append(String.format(\"[RECYCL-BATCH t=%.1fd]\", time(DAY)));\nfor (int _m = 0; _m < 6; _m++)  // CE3.0: 6 = MaterialType enum size (hardcoded; .values() unsupported in nested agent) {\n    if (recyc_pendingRaw[_m] > 0) {\n        double _eff = main.conversionEffPerMat[_m];\n        _sb.append(String.format(\" | %s: raw=%.2ft conv=%.2ft pw=%.2ft\",\n            matNames[_m], recyc_pendingRaw[_m],\n            recyc_pendingRaw[_m]*_eff, recyc_pendingProcessWaste[_m]));\n    }\n}\ntraceln(_sb.toString());]]></Code>
 							</Value>
 						</Parameter>
 						<Parameter><Name><![CDATA[destroyEntity]]></Name></Parameter>
