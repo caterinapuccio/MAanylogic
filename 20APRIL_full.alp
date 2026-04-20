@@ -802,7 +802,7 @@ public void exportValidationReport() {
 java.util.ArrayList<Object[]> truckLog = new java.util.ArrayList<>();
 
 ]]></AdditionalClassCode>
-			<StartupCode><![CDATA[// ═══ CE 3.0 STARTUP (03APRIL): Read from 03APRIL.xlsx ════════════════════════
+			<StartupCode><![CDATA[// ═══ CE 3.0 STARTUP (03APRIL): Read from 20APRIL.xlsx ════════════════════════
 traceln(">>> CE3.0 STARTUP 22MARZ: onStartup() entered");
 
 // ─── 1. Read per-material arrays from Materials sheet ────────────────────────
@@ -2452,7 +2452,7 @@ if (currentYear >= 10) {
 					<ShowLabel>true</ShowLabel>
 					<ResourceReference>
 						<PackageName><![CDATA[ma1]]></PackageName>
-						<ClassName><![CDATA[03APRIL.xlsx]]></ClassName>
+						<ClassName><![CDATA[20APRIL.xlsx]]></ClassName>
 					</ResourceReference>
 					<SaveInSnapshot>false</SaveInSnapshot>
 					<LoadOnStartup>true</LoadOnStartup>
@@ -2468,7 +2468,7 @@ if (currentYear >= 10) {
 					<ShowLabel>true</ShowLabel>
 					<ResourceReference>
 						<PackageName><![CDATA[ma1]]></PackageName>
-						<ClassName><![CDATA[03APRIL.xlsx]]></ClassName>
+						<ClassName><![CDATA[20APRIL.xlsx]]></ClassName>
 					</ResourceReference>
 					<SaveInSnapshot>false</SaveInSnapshot>
 					<LoadOnStartup>true</LoadOnStartup>
@@ -17690,7 +17690,7 @@ traceln(String.format("[VECHAI] t=%.1fd SOLD-INFORMAL: %.3ft | q=%.3f < %.3f | f
 	<ModelResources>
 		<Resource>
 			<Id>1774771731589</Id>
-			<Path><![CDATA[03APRIL.xlsx]]></Path>
+			<Path><![CDATA[20APRIL.xlsx]]></Path>
 			<ReferencedFromUserCode>false</ReferencedFromUserCode>
 			<Location>FILE_SYSTEM</Location>
 		</Resource>
