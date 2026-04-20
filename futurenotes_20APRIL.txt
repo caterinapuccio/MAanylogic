@@ -1,0 +1,485 @@
+FUTURE IMPLEMENTATION NOTES — CE3.0 / 22MARZ Model
+====================================================
+This file accumulates deferred design tasks and open questions
+to be picked up in future development sessions.
+
+Last updated: 2026-03-31
+Model version at time of last update: git commit ebc586f
+
+
+────────────────────────────────────────────────────────────────────
+[1] PROVIDER — WaitingForTruck state (deferred, medium priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  When Intermediate accepts a booking (IS path, acceptBooking returns true)
+  but no truck is available (dedicated truck busy AND no jolly truck free),
+  the current model accepts the booking, increments recyclingStoragePerMat,
+  but dispatches nobody. The waste is "phantom-accepted": counted in storage
+  but never physically collected.
+
+CURRENT WORKAROUND (implemented):
+  A cyclic event truckRetryEvent (every 0.25 day = 6h) polls for a free truck.
+  When found, it dispatches and clears pendingWaste. This is functionally
+  equivalent to a WaitingForTruck statechart state but implemented as a
+  parallel event to avoid restructuring the existing single-thread statechart
+  into an AND-composite state.
+
+DESIRED BEHAVIOUR (future):
+  If a proper parallel statechart is preferred for clarity, the Provider
+  statechart could be refactored into an AND-composite state with:
+    - Main thread: Idle → GeneratingWaste → IS_Accepted/IS_Rejected/NonIS_Disposal → Idle
+    - Parallel thread: Idle ↔ WaitingForTruck (polls truckRetryEvent)
+
+DESIGN REQUIREMENTS (if implementing as statechart instead of event):
+  1. acceptBooking must be split into two steps:
+       a. acceptCapacity(mat, qty, prov) — checks Tier1/Tier2, increments
+          storage, returns true/false. Does NOT dispatch a truck.
+       b. dispatchTruck(prov) — finds and sends a truck. Called from
+          Provider or from a Intermediate cyclic event.
+  2. Provider statechart: add WaitingForTruck state between IS_Accepted
+     and Idle. From WaitingForTruck, poll periodically (e.g. every 6h)
+     whether a truck is available. When found, dispatch and exit to Idle.
+  3. Edge case: if a new weekly cycle fires while Provider is in
+     WaitingForTruck, should the new waste be added to wasteOnHold or
+     discarded? Decision needed before implementation.
+
+AFFECTED FILES / CLASSES:
+  - Provider statechart: add WaitingForTruck state and transitions
+  - Intermediate.acceptBooking (or split into two methods)
+  - GarbageTruck.home entry action (check pending queue)
+  - Possibly: new variable wasteOnHold in Provider
+  - Possibly: new ArrayList<Provider> pendingPickups in Intermediate
+
+NOTE: This does not affect simulation correctness in the near term
+because the jolly truck pool makes full-fleet-busy scenarios rare.
+Prioritise after basic dispatch loop is verified working.
+
+
+────────────────────────────────────────────────────────────────────
+[2] COMBUSTION DES — verify WasteToBeBurned accumulation
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  The combustion DES (Source combustionStart → wasteDrying → thermalDecomposition
+  → slagFormation → CombustionSink) in the Intermediate class fires only when
+  weeklyLandfillBurnEvent detects WasteToBeBurned >= burningThreshold_t.
+  WasteToBeBurned is filled by receiveLandfillWaste(), which is called from
+  GarbageTruck.home when isLandfillRun=true.
+
+OPEN QUESTION:
+  With the fix in commit b8ed70e (IS_Rejected now routes to NonIS_Disposal),
+  WasteToBeBurned should accumulate even when useIS=true but Intermediate
+  storage is full. This needs to be verified by running the model and checking
+  whether [COMBUSTION-COMPLETE] appears in the console after sufficient
+  waste has accumulated.
+
+  Additionally: the burningThreshold_t variable should be read from the Excel
+  file (currently hardcoded). Check Intermediate sheet in 22MARZ.xlsx and
+  wire the value in Main.StartupCode or Intermediate startup.
+
+ACTION NEEDED:
+  - Run model, confirm [PROV0-GEN] / [PROV0-BOOKING-RESULT] / [DISPATCH-T1]
+    / [TRUCK0-DISPATCH] / [TRUCK 0] HOME appear in sequence for prov0
+  - Confirm WasteToBeBurned > 0 after first few weeks
+  - Confirm [COMBUSTION-COMPLETE] appears after WasteToBeBurned >= threshold
+  - Wire burningThreshold_t from Excel if not already done
+
+
+────────────────────────────────────────────────────────────────────
+[3] ACCEPTBOOKING — silent no-dispatch bug
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  In Intermediate.acceptBooking, when a booking is accepted (Tier1 or Tier2
+  capacity available) but both the dedicated truck AND all jolly trucks are
+  busy, the function logs "ACCEPTED", increments recyclingStoragePerMat,
+  and returns true — but no truck is ever sent. The waste is counted in
+  storage but never arrives physically. Over time this causes:
+    - recyclingStoragePerMat to grow without bound
+    - Eventually tier1Free = 0 for every material
+    - All subsequent bookings rejected → all waste routes to NonIS_Disposal
+
+  This is related to item [1] above (WaitingForTruck). Fix item [1] first.
+
+  CURRENT MITIGATION: truckRetryEvent in Provider polls every 6h and
+  dispatches when a truck becomes free. Watch [DISPATCH-FAIL-T1] /
+  [DISPATCH-FAIL-T2] traceln tags to see how often this fires.
+
+TRACELN TO WATCH:
+  [DISPATCH-FAIL-T1] and [DISPATCH-FAIL-T2] in Intermediate.acceptBooking
+  will fire whenever this silent failure occurs. Check console for these
+  tags to quantify how often it happens before implementing the fix.
+
+
+────────────────────────────────────────────────────────────────────
+[4] ENDOFLIFE AGENT — review necessity and cleanup
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  The landfill (EndofLife class) agent was declared "eliminated" in CE3.0
+  Phase 2, with its function absorbed by the Intermediate agent. However,
+  the EmbeddedObject 'landfill' (id 1772014646337) still exists in Main
+  and is instantiated at runtime. Previously, the jumpTo call was commented
+  out, which caused the factory icon to appear at lat=0/lon=0 in the Atlantic
+  Ocean (fixed in session 2026-03-30: jumpTo is now active again, positioning
+  the icon at BIWASE = endOfLifeLat/endOfLifeLon).
+
+DECISION NEEDED:
+  - If the EndofLife agent truly has no role in the model, consider removing
+    the EmbeddedObject from Main XML and deleting the EndofLife class entirely.
+  - If it is kept as a placeholder for future use (e.g., Da Phuoc Landfill as
+    a separate facility), its startup code and statechart must be verified.
+  - The Excel rows 74 (Da Phuoc Landfill) and 75 (BIWASE ETS) document two
+    possible EndofLife locations; only one is currently used.
+
+NOTE: Low priority — the agent is currently harmless since it is positioned
+correctly and has no active interactions with trucks or providers.
+
+
+────────────────────────────────────────────────────────────────────
+[5] TRUCK DISPATCH — RESOLVED (2026-03-31)
+────────────────────────────────────────────────────────────────────
+STATUS: FIXED — commits 917c28c, 59ea326, ebc586f
+
+PROBLEM:
+  Trucks never moved after dispatch. Root cause: send("Go", truck) between
+  sibling agents (Intermediate → GarbageTruck) without AgentLink is silently
+  dropped by AnyLogic. No error, no warning.
+
+FIX APPLIED (3 commits):
+  1. Replaced send("Go", truck) with direct field write: truck.dispatchPending = true
+     at all 4 dispatch sites (Intermediate.acceptBooking Tier1/Tier2,
+     Provider.truckRetryEvent, Provider.NonIS_Disposal).
+  2. Added pollTimer (cyclic, 0.25 DAY) to GarbageTruck so AnyLogic
+     re-evaluates the t_dispatch condition trigger periodically.
+  3. Replaced getSpeed() with hardcoded 10.0 in transit entry diagnostic
+     (getSpeed() requires CarExtension from Road Traffic Library; GIS agents
+     using moveTo don't have it → RuntimeException).
+
+VERIFICATION (10-year simulation):
+  - truck0: 514 trips, 853.056t cumulative
+  - Dispatch latency: ~0.08 days (within 6h pollTimer window)
+  - Full cycle: DISPATCH-T1 → TRUCK0-DISPATCH → TRANSIT-ENTRY → LOADED-LEG
+    → ARRIVED@BIWASE → HOME → provider notified → isTransporting cleared
+
+REMAINING NOTE:
+  pollTimer introduces up to 6h dispatch latency. If sub-hour dispatch is
+  needed in the future, reduce the pollTimer period (e.g., 0.04 DAY = ~1h).
+  Trade-off: more frequent polling = more CPU overhead per truck.
+
+
+────────────────────────────────────────────────────────────────────
+[6] CELL STYLES EXCEEDED — exportValidationReport (low priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  Apache POI limits xlsx workbooks to 64,000 cell styles. The
+  exportValidationReport method creates a new CellStyle per row for
+  the trip log table. Over a 10-year simulation with 500+ trips per
+  truck × 71 trucks, this exceeds the limit.
+
+SYMPTOM:
+  java.lang.IllegalStateException at Year 10 and Year 11 report exports:
+  "The maximum number of Cell Styles was exceeded."
+  The report still exports (partially), so this is non-critical.
+
+FIX NEEDED:
+  Cache and reuse CellStyle objects in exportValidationReport instead
+  of creating new ones per row. Typical pattern: create a small set of
+  styles (header, data-even, data-odd, etc.) once, then apply them
+  to all rows.
+
+AFFECTED CODE:
+  Main class, exportValidationReport method (search for "CellStyle" in
+  the report-generation section of the ALP file).
+
+
+────────────────────────────────────────────────────────────────────
+[7] TRUCK VELOCITY — wire Excel value to GarbageTruck (Phase 3)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  truckVelocity_kmh is read from the TruckFleet sheet in 22MARZ.xlsx
+  (60 km/h) but never applied to individual GarbageTruck instances.
+  Trucks currently use the hardcoded VelocityCode = 10 MPS (= 36 km/h).
+
+ACTION NEEDED:
+  - In GarbageTruck startup or Main.createTruckFleet, set each truck's
+    velocity from the Excel-read value.
+  - Convert km/h to m/s: velocity_mps = truckVelocity_kmh / 3.6
+  - Update the hardcoded 10.0 in the transit entry diagnostic accordingly.
+  - Note: moveTo() uses the agent's VelocityCode; verify whether
+    setSpeed(double) or direct VelocityCode assignment is needed.
+
+
+────────────────────────────────────────────────────────────────────
+[8] TRUCK VISIBILITY ON GIS MAP — verify visual appearance
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  User reported "cars are still not appearing on the map." The lorry
+  presentation shape is set to visible=true on transit entry, but
+  transit time is ~0.011h (~40 seconds) at 10 m/s over 0.571 km.
+  This may be too brief to observe visually during normal-speed runs.
+
+ACTION NEEDED:
+  - Run simulation at slow speed or with breakpoints to confirm the
+    truck icon appears during transit.
+  - If visibility is confirmed but too brief, consider keeping trucks
+    visible during the full dispatch cycle (dispatch → transit → home)
+    rather than only during transit.
+
+
+────────────────────────────────────────────────────────────────────
+[9] FERROUS GRADING — HMS1 assumption (deferred, low priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  All FERROUS_METAL(2) flows are currently modeled as a homogeneous
+  material without grading. The implicit assumption is HMS1 (Heavy
+  Melting Scrap Grade 1: ≥6 mm thickness, clean of non-metallics).
+  HMS1 is the dominant traded grade in Vietnamese industrial scrap
+  markets and the standard reference grade in industrial ecology
+  literature (Graedel et al. 2011; Daigo et al. 2017).
+
+  A more granular model would distinguish:
+    - HMS1 (heavy industrial plate/structural scrap)
+    - HMS2 (lighter gauge, some coatings allowed)
+    - Shredded scrap (lower value, mixed quality)
+    - Cast iron (different composition, different EAF path)
+
+  Each grade has a distinct market price and may require different
+  pre-treatment (e.g. HMS2 needs decoating step).
+
+DECISION NEEDED:
+  If grading is implemented, add a `ferrousGrade` parameter to Provider
+  (set from Excel), and apply a grade-dependent market price multiplier
+  to revenue calculations. The LCA emission factor would also differ
+  slightly (HMS1 → EAF direct; lower grades → additional pre-processing).
+
+NOTE ON PRICE:
+  HMS1 Vietnam/HCMC dealer price: ~280–320 USD/t (2022–2023, [TRAINING]).
+  Primary source for Vietnam: Vietnam Scrap Metal Association (VASMA),
+  HCMC scrap price boards (grey literature, [GREY]).
+  Excel note: "Assumed grade: HMS1 equivalent [ASSUMED]" is in the
+  Intermediate sheet, ferrous row, col E/F annotation.
+
+IMPLEMENT AFTER: basic model is fully running and validated.
+
+
+────────────────────────────────────────────────────────────────────
+[10] NON-FERROUS MATERIAL DIFFERENTIATION (deferred, medium priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  NON_FERROUS_METAL(4) is a single material type in the current model,
+  but the environmental significance of non-ferrous materials varies
+  dramatically by sub-type. Al, Cu, Pb, and Zn each have distinct
+  GWP, energy demand, and toxicity profiles.
+
+  From the ESCAR (BIWASE, Nov 2022):
+  - WEEE dismantling recovers Cu, Au, Ag, Al from circuit boards
+  - Battery dismantling recovers Pb from lead-acid batteries
+  - No quantified tonnages per non-ferrous sub-type are given
+
+  For VSIP1's industrial tenant base (electronics, garments, light
+  manufacturing), likely non-ferrous streams include:
+    Al offcuts (packaging, structural), Cu wire scrap,
+    Pb solder/battery, Zn coating scrap
+
+  Differentiation is ENVIRONMENTALLY meaningful (Cu recycling saves
+  ~6 t CO2-eq/t; Al saves ~9 t CO2-eq/t; Pb saves ~1.5 t CO2-eq/t).
+
+DECISION NEEDED:
+  Extend MaterialType enum to include ALUMINIUM(5), COPPER(6), LEAD(7),
+  or keep NON_FERROUS as an aggregate. If extended, all 5-element arrays
+  must become 8-element arrays and all material loops must be updated.
+  Requires VSIP1-specific composition data.
+
+IMPLEMENT AFTER: VSIP1 data is obtained from DONRE or VSIP Management.
+
+
+────────────────────────────────────────────────────────────────────
+[11] MSW PROVIDER — Binh Duong municipality (deferred, medium priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  BIWASE receives ~2,990 t/day domestic MSW province-wide (2022 EIA,
+  Decision 1232/QD-BTNMT). No VSIP1-specific MSW volume exists in
+  the ESCAR. A rough district-level proxy for Thuan An: ~2,324 t/week
+  [ASSUMED].
+
+  MSW composition (ESCAR p.37, operational data):
+    Organic (biodegradable): ~43.2%
+    Leachate:                ~6.0%
+    Recyclables (plastic/metal/nylon): ~1.3%  → of which plastic ~2.84%
+    Incineration/landfill:  ~49.5%
+
+  KEY DISTINCTION — industrial vs. municipal plastic recyclability:
+    Industrial plastic (single-source, uncontaminated): 85–95% recyclable
+    Municipal plastic (mixed polymers, food-contaminated): 20–40% effective
+    recyclability in SEA context (Wilson et al. 2015, Waste Management;
+    Sarc et al. 2019, Waste Management). [LIT, Consensus verification pending]
+
+  This means the conversionEffPerMat[0] currently used for all providers
+  should NOT apply equally to an MSW provider.
+
+DESIGN APPROACH (recommended hybrid):
+  1. ABM: add 1 new Provider instance of subtype "MSW" with custom
+     wasteCompositionVec[5] derived from ESCAR p.37 composition data.
+  2. SD: model weekly MSW inflow with seasonal multiplier (dry/wet season
+     Vietnam waste generation variation ~±15%, [TRAINING]).
+  3. DES: assign separate recyclabilityFactor[m] to MSW provider,
+     overriding conversionEffPerMat for that provider only.
+
+IMPLEMENT AFTER: all existing providers are verified correct and
+the VSIP1-specific data situation is clarified.
+
+
+────────────────────────────────────────────────────────────────────
+[12] FERROUS INFORMAL SECTOR — noIS emission factor (deferred, medium priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  In Vietnam and SEA, ~70–85% of industrial ferrous scrap is captured
+  by informal itinerant buyers (*ve chai*) before formal waste collection
+  (Nguyen et al. 2019, Resources Conservation & Recycling;
+  Wilson et al. 2006, Habitat International). [LIT, Consensus pending]
+
+  The IS environmental benefit for ferrous therefore lies NOT in
+  waste diversion rate (already high in noIS pathway) but in:
+    noIS path: informal induction furnace smelting → higher GWP,
+               heavy metal emissions, dioxins/PM2.5
+    IS path:   EAF formal recycling → ~0.4–0.6 kg CO2-eq/kg,
+               certified quality output (ecoinvent 3.9: "steel
+               production, electric, low-alloyed")
+
+IMPLEMENTATION:
+  Add `recyclingEmissionFactor[5][2]` — [material][IS=0/noIS=1].
+  Apply different GWP factor per tonne recycled in IS vs. noIS path.
+  This makes the IS benefit for ferrous appear in the GWP KPI, not
+  in the landfill fraction.
+
+REQUIRES: ecoinvent 3.9 value for informal smelting in SEA context.
+Consensus verification of literature values needed before implementing.
+
+
+────────────────────────────────────────────────────────────────────
+[13] ASH FRACTIONS — MATERIAL-SPECIFIC + BRICK PRODUCTION (deferred, low priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  Current model uses bottomAsh_massFraction=0.25 and flyAsh_massFraction=0.04
+  for ALL materials. In reality:
+    Paper/organic: bottom ash ~20–30%, fly ash ~3–5% (close to current values)
+    Plastic: bottom ash ~5–10%, fly ash higher + more hazardous (dioxins)
+    Textiles: similar to paper
+    Ferrous/non-ferrous: metals should NOT be incinerated; they pass through
+      as slag residue, not combustion ash
+
+  BIWASE brick production (ESCAR pp.14, 20, 70):
+    Input: non-hazardous bottom ash + wastewater treatment sludge
+    Capacity: 20,000–100,000 bricks/day (discrepancy between p.20 and p.70)
+    This is an IS output stream from BIWASE and should be modeled as
+    an outflow of the Intermediate agent with associated revenue.
+
+IMPLEMENT AFTER: basic model validation complete.
+
+
+────────────────────────────────────────────────────────────────────
+[14] MATERIAL-SPECIFIC RECYCLING OPEX (deferred, medium priority)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  Current OPEX model uses a single storage-based rate:
+    monthlyIntOpex = usedCapacity × opexPerStorageUnitPerMonth
+
+  In reality, recycling OPEX varies significantly by material:
+    Plastic shredding + washing: energy-intensive (~40–80 EUR/t)
+    Paper baling: low OPEX (~10–20 EUR/t)
+    Ferrous sorting: medium (~15–35 EUR/t)
+    Non-ferrous sorting/segregation: high (~50–120 EUR/t, especially Cu)
+    Textile shredding: medium (~25–50 EUR/t)
+
+  Vietnam cost factor vs. Western Europe: 0.35–0.50 (lower labour/land).
+  Sources: [TRAINING, Consensus verification pending when quota resets]
+
+IMPLEMENTATION:
+  Add recyclingOpexPerMat[5] array (SGD/t). In calculateOPEX, compute:
+    materialOpex += recyc_processedPerMat[m] × recyclingOpexPerMat[m]
+  Requires knowing monthly processed tonnage per material.
+
+EXCEL: add recyclingOpexPerMat[5] row in Intermediate Investment sheet
+with per-material values and citation column.
+
+
+────────────────────────────────────────────────────────────────────
+[15] EXCEL SHEET CONSOLIDATION — Intermediate vs. Intermediate Investment
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  Current split:
+    "Intermediate" sheet: storage capacity, OPEX rates, discount rate
+    "Intermediate Investment" sheet: recyclingCapex_SGD, recyclingOpexAnnual
+
+  This split is historical/arbitrary. All investment parameters belong
+  together. Consolidate into a single "Intermediate" sheet with clear
+  section headers. This is a housekeeping task — no ALP changes needed
+  beyond updating getCellNumericValue() row numbers after reorganization.
+
+  All three CAPEX categories (storage, recycling plant, trucks) should
+  appear in consecutive rows under an "INVESTMENT" section header.
+
+IMPLEMENT WHEN: model is stable and no active parameter tuning is happening.
+
+
+
+────────────────────────────────────────────────────────────────────
+[16] ORGANIC WASTE — MaterialType extension to 6 materials (ready for next major phase)
+────────────────────────────────────────────────────────────────────
+CONTEXT:
+  Organic waste (food waste, garden waste) can be composted → compost/fertilizer.
+  BIWASE does this already: composting 1,512 tpd actual, 6 fertilizer product types
+  sold commercially (ESCAR pp.34-39). Conversion efficiency ~0.20 (5:1 mass ratio).
+
+  IS loop: MSW organic fraction → BIWASE composting → compost sold to agricultural
+  buyers in Binh Duong region. This is a real, documented IS flow.
+
+  ecoinvent: "treatment of biowaste, composting" (process LCA)
+             "market for compost, at plant" (product credit)
+
+ARCHITECTURE CHANGE REQUIRED:
+  - Add ORGANIC_WASTE(5) to MaterialType enum
+  - All 5-element arrays → 6-element arrays:
+      conversionEffPerMat[6], pw_landfillSharePerMat[6], pw_incinerationSharePerMat[6],
+      noIS_landfillShare[6], noIS_incinerationShare[6], costLandfillPerMat[6], etc.
+  - All loops: for (int m = 0; m < 5; m++) → for (int m = 0; m < nMat; m++) (nMat=6)
+  - New TruckFleet column for organic material capacity (open truck, ~8-10 t)
+  - New Receiver agent: agricultural buyer of compost (1 agent, myMaterial=ORGANIC_WASTE)
+  - conversionEffPerMat[5] = 0.20 (from ESCAR 5:1 ratio)
+  - New DES chain: compost_Start → compost_Sorting → compost_Maturation → compost_Sink
+  - MSW provider is the primary (and initially only) ORGANIC_WASTE generator
+  - LCA for composting vs. landfill benefit: use ecoinvent entries above
+
+BEFORE IMPLEMENTING:
+  - Confirm nMat variable is used consistently in all loops (not hardcoded 5)
+  - Plan DataBase / Excel extension: new row in Materials sheet for ORGANIC_WASTE
+  - Plan Companies_Listing: add agricultural buyer Receiver row
+
+STATUS: Design complete. Ready to implement after MSW provider (item [11]) is done.
+
+[17] MSW ORGANIC FRACTION — INCINERATION vs. LANDFILL SPLIT (deferred, medium priority)
+
+STATUS: xxx flag active in model (noIS_incinerationShare[5] and noIS_landfillShare[5] both = 0.50)
+
+CONTEXT:
+In Phase 15, ORGANIC_WASTE (MaterialType index 5) noIS baseline scenario assumes an equal 50/50 split
+between incineration and landfill for the non-IS pathway. This is a modelling assumption [ASSUMED]
+based on general Southeast Asian MSW composition data (IPCC 2006 Vol. 5, Ch. 3; Hoornweg & Bhada-Tata 2012).
+No Vietnam-specific landfill/incineration split data for VSIP1 organic fractions has been confirmed.
+
+RESEARCH NEEDED:
+1. Primary: Binh Duong Province waste management statistics (DONRE / BIWASE annual reports)
+2. Secondary: Vietnam National Waste Management Strategy (Decision 491/QD-TTg, 2018 revision)
+3. Academic: Nguyen et al. (2021) "Municipal solid waste management in developing countries of Southeast Asia"
+   or equivalent for Vietnam-specific landfill vs. incineration allocation
+4. Consensus with thesis supervisors on whether 50/50 is defensible or should be revised
+
+ALP VARIABLES AFFECTED:
+  noIS_landfillShare[5]      = 0.50  // [ASSUMED] — revise after literature review
+  noIS_incinerationShare[5]  = 0.50  // [ASSUMED] — same
+  (Main agent, disposal arrays, CE 3.0 Phase 15)
+
+ACTION:
+Replace [ASSUMED] values with literature-based or field-confirmed split ratio.
+Update Main disposal arrays and remove xxx comments once consensus is reached.
+
+PRIORITY: Medium — affects GWP baseline comparison for ORGANIC_WASTE IS vs. noIS scenario.
+Required before thesis submission for section on noIS counterfactual scenario.
