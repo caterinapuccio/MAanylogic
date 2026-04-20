@@ -12254,7 +12254,7 @@ traceln(String.format(
 					<Id>1774862207652</Id>
 					<Name><![CDATA[wasteDrying]]></Name>
 					<X>495</X><Y>310</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -12436,7 +12436,7 @@ stagingAshCycleMass_t = WasteToBeBurned;]]></Code></Value>
 					<Id>1774862268497</Id>
 					<Name><![CDATA[slagFormation]]></Name>
 					<X>665</X><Y>310</Y>
-					<Label><X>-36</X><Y>62</Y></Label>
+					<Label><X>-36</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -12665,7 +12665,7 @@ send("CombustionFinished", this);]]></Code>
 					<Name><![CDATA[brickProduction]]></Name>
 					<Description><![CDATA[COMBUSTION DES — Step 6/7: Brick production (tri 2, 4, 8 h). Bottom ash + WW treatment sludge fired in tunnel kiln. ESCAR p.70: 100,000 bricks/day capacity. Only bottom ash fraction (bottomAsh_massFraction=0.25) enters here. Exit action: brickMass = stagingAshCycleMass_t * bottomAsh_massFraction * brickYield_tPerTAsh; revenue credited to brickRevenues and financialBalance. [xxx: brickYield and brickPrice are ILLUSTRATIVE — replace before submission]]]></Description>
 					<X>835</X><Y>310</Y>
-					<Label><X>-50</X><Y>62</Y></Label>
+					<Label><X>-50</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -12735,7 +12735,7 @@ traceln(String.format("[BRICK-PROD t=%.1fd] bottomAsh=%.3ft → bricks=%.3ft | r
 					<Name><![CDATA[flyAshToLandfill]]></Name>
 					<Description><![CDATA[COMBUSTION DES — Step 7/7: Fly ash to hazardous landfill (tri 0.5, 1, 2 h). Fly ash (flyAsh_massFraction=0.04 of cycle mass) is classified as hazardous waste — concentrates heavy metals (Pb, Cd, Zn) and dioxins from combustion. Routed to secured hazardous landfill (NOT the brick kiln). LCA factor: ecoinvent 'treatment of fly ash from municipal incineration, residual material landfill' [ILLUSTRATIVE — replace before submission]. Exit action adds fly ash LCA burden to GWPActualIncineration.]]></Description>
 					<X>920</X><Y>310</Y>
-					<Label><X>-30</X><Y>62</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -12895,7 +12895,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 					<Id>9982001002</Id>
 					<Name><![CDATA[recyclShredding]]></Name>
 					<X>480</X><Y>440</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -13025,7 +13025,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 					<Id>9982001004</Id>
 					<Name><![CDATA[recyclSeparation]]></Name>
 					<X>650</X><Y>440</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -13293,7 +13293,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 					<Name><![CDATA[pwTransport]]></Name>
 					<Description><![CDATA[PROCESS WASTE DES — Step 2/4: Transport delay (tri 1, 2, 4 h). Represents internal logistics at BIWASE: forklift movement of residue bins from the sorting/processing hall to the outbound truck bay (~100–300 m on-site). Duration is dominated by equipment availability, not road travel. This is NOT an external GarbageTruck trip.]]></Description>
 					<X>480</X><Y>530</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -13544,7 +13544,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 					<Id>9985001002</Id>
 					<Name><![CDATA[paper_Baling]]></Name>
 					<X>480</X><Y>630</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -13607,7 +13607,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 					<Id>9985001003</Id>
 					<Name><![CDATA[paper_Loading]]></Name>
 					<X>565</X><Y>630</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -13804,7 +13804,7 @@ traceln(String.format("[DES-PAPER_WASTE t=%.1fd] processing batch complete", tim
 					<Id>9986001002</Id>
 					<Name><![CDATA[fe_Sorting]]></Name>
 					<X>480</X><Y>720</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -13867,7 +13867,7 @@ traceln(String.format("[DES-PAPER_WASTE t=%.1fd] processing batch complete", tim
 					<Id>9986001003</Id>
 					<Name><![CDATA[fe_Grading]]></Name>
 					<X>565</X><Y>720</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -13930,7 +13930,7 @@ traceln(String.format("[DES-PAPER_WASTE t=%.1fd] processing batch complete", tim
 					<Id>9986001004</Id>
 					<Name><![CDATA[fe_PreTreatment]]></Name>
 					<X>650</X><Y>720</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -14127,7 +14127,7 @@ traceln(String.format("[DES-FERROUS_METAL t=%.1fd] processing batch complete", t
 					<Id>9987001002</Id>
 					<Name><![CDATA[text_CutShredding]]></Name>
 					<X>480</X><Y>810</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -14191,7 +14191,7 @@ traceln(String.format("[DES-FERROUS_METAL t=%.1fd] processing batch complete", t
 					<Id>9987001003</Id>
 					<Name><![CDATA[text_FibreReprocessing]]></Name>
 					<X>565</X><Y>810</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -14388,7 +14388,7 @@ traceln(String.format("[DES-TEXTILE_WASTE t=%.1fd] processing batch complete", t
 					<Id>9988001002</Id>
 					<Name><![CDATA[nfe_Sorting]]></Name>
 					<X>480</X><Y>900</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
@@ -14451,7 +14451,7 @@ traceln(String.format("[DES-TEXTILE_WASTE t=%.1fd] processing batch complete", t
 					<Id>9988001003</Id>
 					<Name><![CDATA[nfe_Segregation]]></Name>
 					<X>565</X><Y>900</Y>
-					<Label><X>-30</X><Y>64</Y></Label>
+					<Label><X>-30</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
 					<PresentationFlag>true</PresentationFlag>
 					<ShowLabel>true</ShowLabel>
