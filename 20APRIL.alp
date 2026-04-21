@@ -1035,32 +1035,33 @@ traceln("CE3.0 BrickPlant: yield=" + intermediate.brickYield_tPerTAsh
     + " SGD/t | capex=" + intermediate.brickPlantCapex_SGD + " SGD");
 intermediate.recyclingCapex      = recyclingCapex_SGD;
 intermediate.recyclingOpexAnnual = recyclingOpex_annSGD;
+// ── IS infrastructure investment (the decision metric for thesis KPIs) ──────────
+// totalCapex = storage + recycling ONLY. Brick plant and truck fleet are tracked
+// separately on the full balance sheet but excluded from ROI/NPV investment metrics.
+// Research question: should BIWASE invest in IS-enabling storage + recycling infra?
+totalCapex                       = storageCapex + recyclingCapex_SGD;  // IS investment CAPEX
 double totalInvestment           = storageCapex + recyclingCapex_SGD
-                                 + intermediate.brickPlantCapex_SGD; // Phase 14: brick kiln CAPEX
+                                 + intermediate.brickPlantCapex_SGD;   // full balance-sheet CAPEX
 intermediate.intermediateCapex   = totalInvestment;
 // t=0 CAPEX: deducted undiscounted — NOT added to totalCosts (avoids year-1 discounting)
-intermediate.financialBalance  -= totalInvestment;
-npv                            -= totalInvestment;
-intermediate.entityNPV         -= totalInvestment;
+intermediate.financialBalance  -= totalInvestment;   // full balance sheet (storage + recycling + brick)
+npv                            -= totalCapex;         // CBA welfare NPV: IS infra CAPEX at t=0 only
+intermediate.entityNPV         -= totalCapex;         // IS investment NPV: IS infra CAPEX at t=0 only
 
-// ─── 10. Network-level CAPEX ──────────────────────────────────────────────────
-// Fleet CAPEX: truck purchase cost × total truck count, deducted at t=0.
-// In CE3.0, BIWASE (Intermediate) owns and operates the collection fleet.
-// Providers and Receivers pay transport OPEX per trip via transportCostCalc();
-// they do not own trucks and therefore bear no truck CAPEX.
-// If a future model extension gives Providers or Receivers their own trucks,
-// add their fleet CAPEX to their respective entityNPV deductions here.
-// [FUTURE TASK: distribute truck ownership if modeled explicitly per agent]
+// ─── 10. Fleet CAPEX (balance sheet only — excluded from IS investment metrics) ───
+// Fleet is an operational enabler. The IS investment decision (ROI/NPV) concerns
+// whether storage + recycling infrastructure is financially viable, not fleet ownership.
 double fleetCapex = garbageTrucks.size() * truckCapex_SGD;
 totalInvestment   += fleetCapex;
-intermediate.intermediateCapex += fleetCapex;
-intermediate.financialBalance  -= fleetCapex;
-npv                            -= fleetCapex;
-intermediate.entityNPV         -= fleetCapex;
+intermediate.intermediateCapex += fleetCapex;          // fleet on full balance sheet
+intermediate.financialBalance  -= fleetCapex;          // fleet deducted from cash account
+// npv and entityNPV: fleet CAPEX intentionally excluded from IS investment metrics
 traceln("Fleet CAPEX: " + garbageTrucks.size() + " trucks × "
     + String.format("%.0f", truckCapex_SGD) + " SGD = "
-    + String.format("%.0f", fleetCapex) + " SGD deducted at t=0");
-totalCapex = totalInvestment;
+    + String.format("%.0f", fleetCapex) + " SGD (balance sheet only)");
+traceln("IS investment totalCapex: " + String.format("%.0f", totalCapex)
+    + " SGD (storage " + String.format("%.0f", storageCapex)
+    + " + recycling " + String.format("%.0f", recyclingCapex_SGD) + " SGD)");
 
 traceln("CE3.0 22MARZ Startup complete.");
 traceln("  Intermediate CAPEX : " + String.format("%.2f", storageCapex) + " SGD (storage only)"
@@ -2348,18 +2349,17 @@ networkTotalCostSavingsIS = providers.stream().mapToDouble(p -> p.deltaFinancial
 // Pre-compute Intermediate net operating result (reused in sections 1 and 3)
 intermediate.netOperatingResult = intermediate.totalRevenues - intermediate.totalCosts;
 // IS Net Position = Gross Savings + Intermediate net operating result
-// FINANCIAL-1 NOTE: `npv` is the NETWORK WELFARE NPV (cost-benefit analysis perspective),
-// NOT BIWASE's corporate financial NPV. It captures the discounted annual increment of total
-// economic value created by IS vs. BAU — provider disposal savings + receiver material savings
-// + Intermediate net operating result (complementary, not double-counted; see audit 2026-03-25).
-// For BIWASE's corporate discounted cash flow NPV, use intermediate.entityNPV.
+// `npv` = NETWORK WELFARE NPV (CBA metric, includes counterfactual savings) — kept for scenario analysis.
+// IS investment KPIs use intermediate.entityNPV (actual cash flows) — see plotNPV chart.
+// Thesis Methods must state: network welfare NPV ≠ IS investment NPV (both reported separately).
 double currentNetBalance = networkTotalCostSavingsIS + intermediate.netOperatingResult;
 networkTotalEconomicBenefitIS = currentNetBalance;  // persist as chartable variable
-ROI = totalCapex == 0 ? 0.0 : ((networkTotalEconomicBenefitIS - totalCapex) / totalCapex) * 100.0;
-// FINANCIAL-2: IS network ROI (%) = (gain from IS − CAPEX) / CAPEX × 100
-// gain = provider savings + receiver savings + intermediate net operating result (cumulative)
-// ROI < 0 in early years while CAPEX not yet recovered; crosses 0 at payback year
-// For useIS=false: networkTotalEconomicBenefitIS ≈ 0 → ROI ≈ −100% (investment not recovered)
+// FINANCIAL-2 revised: ROI = (intermediate actual net operating result − IS infra CAPEX) / IS infra CAPEX
+// gain = intermediate.netOperatingResult = totalRevenues − totalCosts (OPEX already netted)
+// Counterfactual savings (provider/receiver) excluded — only actual Intermediate cash flows
+// ROI < 0 while IS infra CAPEX not yet recovered; crosses zero at economic payback year
+// useIS=false: netOperatingResult ≈ −OPEX → ROI ≈ −(100% + OPEX/totalCapex)
+ROI = totalCapex == 0 ? 0.0 : ((intermediate.netOperatingResult - totalCapex) / totalCapex) * 100.0;
 double cashflowThisYear = currentNetBalance - lastYearNetBalance;
 npv += cashflowThisYear / pow(1 + discountRate, currentYear);
 
@@ -2385,10 +2385,11 @@ intermediate.lastYearNetBalance = intermediate.netOperatingResult;
 
 // 5. SALVAGE VALUE at Year 10
 if (currentYear == 10) {
-    double salvageValue = totalCapex * salvageValuePercent;
+    double salvageValue = totalCapex * salvageValuePercent;  // IS infra salvage (storage + recycling)
     double discountedSalvage = salvageValue / pow(1 + discountRate, 10);
-    npv += discountedSalvage;
-    traceln("Year 10: Salvage " + String.format("%.2f", discountedSalvage) + " SGD added to NPV.");
+    npv += discountedSalvage;                   // welfare NPV salvage
+    intermediate.entityNPV += discountedSalvage;  // IS investment NPV salvage
+    traceln("Year 10: Salvage " + String.format("%.2f", discountedSalvage) + " SGD added to npv + entityNPV.");
 }
 
 // 6. Compute network LCA savings (Provider IS-pathway delta + Receiver IS substitution delta)
@@ -3654,7 +3655,7 @@ if (currentYear >= 10) {
 					<Id>1772111262378</Id>
 					<Expression><![CDATA[my_dataset]]></Expression>
 					<Color>-16776961</Color>
-					<Expression2><![CDATA[npv]]></Expression2>
+					<Expression2><![CDATA[intermediate.entityNPV]]></Expression2>
 					<Expression2Flag>true</Expression2Flag>
 						<PointStyle>NONE</PointStyle>
 						<LineWidth>3.0</LineWidth>
