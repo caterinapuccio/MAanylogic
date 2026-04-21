@@ -2355,7 +2355,11 @@ intermediate.netOperatingResult = intermediate.totalRevenues - intermediate.tota
 // For BIWASE's corporate discounted cash flow NPV, use intermediate.entityNPV.
 double currentNetBalance = networkTotalCostSavingsIS + intermediate.netOperatingResult;
 networkTotalEconomicBenefitIS = currentNetBalance;  // persist as chartable variable
-ROI = totalCapex == 0 ? 0.0 : (networkTotalEconomicBenefitIS / totalCapex) * 100.0;  // FINANCIAL-2: network welfare ROI (%)
+ROI = totalCapex == 0 ? 0.0 : ((networkTotalEconomicBenefitIS - totalCapex) / totalCapex) * 100.0;
+// FINANCIAL-2: IS network ROI (%) = (gain from IS − CAPEX) / CAPEX × 100
+// gain = provider savings + receiver savings + intermediate net operating result (cumulative)
+// ROI < 0 in early years while CAPEX not yet recovered; crosses 0 at payback year
+// For useIS=false: networkTotalEconomicBenefitIS ≈ 0 → ROI ≈ −100% (investment not recovered)
 double cashflowThisYear = currentNetBalance - lastYearNetBalance;
 npv += cashflowThisYear / pow(1 + discountRate, currentYear);
 
