@@ -183,8 +183,8 @@ double[] pricePaidToProvider  = new double[6];  // SGD/t (neg=provider pays, pos
 // pw_* = fate of recycling residue (processWaste = rawBuffer*(1-convEff)) at BIWASE hub
 // Sources: Vietnam plastic 2024 (ET Journal); Vietnam TV MFA 2018 (RCR); Thai Al LCA 2025 (IOP);
 //          SE Asia MSW 2023 (Sustainability); Textile waste 2024 (Energies)
-double[] pw_landfillSharePerMat     = {0.70, 0.80, 0.85, 0.50, 0.85, 0.60};  // [5]=ORGANIC_WASTE compost residue [ASSUMED]
-double[] pw_incinerationSharePerMat = {0.25, 0.10, 0.05, 0.40, 0.10, 0.10};  // [5]=ORGANIC_WASTE [ASSUMED]
+double[] pw_landfillSharePerMat     = {0.74, 0.89, 0.94, 0.56, 0.89, 0.86};  // normalised: LF+incin=1.0 per material; [5]=ORGANIC_WASTE [ASSUMED]
+double[] pw_incinerationSharePerMat = {0.26, 0.11, 0.06, 0.44, 0.11, 0.14};  // normalised: LF+incin=1.0 per material; [5]=ORGANIC_WASTE [ASSUMED]
 // noIS disposal: fate of waste when provider does NOT enter IS network (BAU baseline)
 // [0] PLASTIC, [1] PAPER: same as pw_* arrays — modeling assumption subject to sensitivity analysis [ASSUMED]
 // [2] FERROUS, [4] NON_FERROUS: low shares reflect informal scrap dealer diversion (Wilson et al. 2006; Nguyen et al. 2019) [LIT]
@@ -11876,8 +11876,6 @@ for (int m = 0; m < nMat; m++) {
     if (processWaste > 0) {
         double pw_toLandfill     = processWaste * main.pw_landfillSharePerMat[m];
         double pw_toIncineration = processWaste * main.pw_incinerationSharePerMat[m];
-        double pw_toOther        = processWaste * (1.0 - main.pw_landfillSharePerMat[m] - main.pw_incinerationSharePerMat[m]);
-
         // Bottom ash and fly ash from incinerated fraction
         double bottomAshMass = pw_toIncineration * main.bottomAsh_massFraction;
         double flyAshMass    = pw_toIncineration * main.flyAsh_massFraction;
@@ -11889,8 +11887,8 @@ for (int m = 0; m < nMat; m++) {
         this.totalCosts += pwCost;
 
         // Trace log for mass balance verification
-        traceln(String.format("CE3.0 recyclingPW m=%d: pw=%.3ft → LF=%.3ft incin=%.3ft other=%.3ft | BA=%.3ft FA=%.3ft",
-            m, processWaste, pw_toLandfill, pw_toIncineration, pw_toOther, bottomAshMass, flyAshMass));
+        traceln(String.format("CE3.0 recyclingPW m=%d: pw=%.3ft → LF=%.3ft incin=%.3ft | BA=%.3ft FA=%.3ft",
+            m, processWaste, pw_toLandfill, pw_toIncineration, bottomAshMass, flyAshMass));
         main.landfillCostPerMat[m] += pwCost;
 
         // Transport: EoL facility is co-located with BIWASE (dist = 0) — no transport cost or GWP.
@@ -13934,7 +13932,7 @@ traceln(String.format("[FLY-ASH-LANDFILL t=%.1fd] flyAsh=%.3ft (%.1f kg) → haz
 				<EmbeddedObject>
 					<Id>9983001003</Id>
 					<Name><![CDATA[pwLandfillDeposit]]></Name>
-					<Description><![CDATA[PROCESS WASTE DES — Step 3/4: Landfill deposit delay (tri 0.5, 1, 2 h). Represents the formal deposit at Da Phuoc Sanitary Landfill: weighbridge check-in, cell routing, compaction, and daily cover. The split between landfill and incineration is controlled by pw_landfillSharePerMat[m] and pw_incinerationSharePerMat[m], set in recyclingProcessing() before injection. Residual fraction (1 - landfill - incineration) is logged as pw_toOther (future IS output / unspecified fate).]]></Description>
+					<Description><![CDATA[PROCESS WASTE DES — Step 3/4: Landfill deposit delay (tri 0.5, 1, 2 h). Represents the formal deposit at Da Phuoc Sanitary Landfill: weighbridge check-in, cell routing, compaction, and daily cover. The split between landfill and incineration is controlled by pw_landfillSharePerMat[m] and pw_incinerationSharePerMat[m], set in recyclingProcessing() before injection. Arrays are normalised so LF + incin = 1.0 for every material; no residual fraction.]]></Description>
 					<X>565</X><Y>530</Y>
 					<Label><X>-70</X><Y>-18</Y></Label>
 					<PublicFlag>false</PublicFlag>
