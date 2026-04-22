@@ -1210,6 +1210,22 @@ validateExcelConnections();
 					</Properties>
 				</Variable>
 				<Variable Class="PlainVariable">
+					<Id>9900000000010</Id>
+					<Name><![CDATA[networkSymbioticCoefficient]]></Name>
+					<Description><![CDATA[Network-level symbiotic coefficient: fraction of total material flows that are IS-derived (secondary). n_net = totalSecondaryMaterial / (totalSecondaryMaterial + totalVirginMaterial). Range [0,1]. Computed annually in annualFinancialUpdate. Shown in plotSymbioticCoeff chart. Ref: He et al. (2020) JCP 251:119417.]]></Description>
+					<X>1060</X><Y>-50</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
 					<Id>1772080326512</Id>
 					<Name><![CDATA[avgSupply]]></Name>
 					<X>1390</X><Y>1750</Y>
@@ -2413,6 +2429,32 @@ exchangedLog.add(totalExchanged);
 // CE3.0 audit 2026-03-25: CSV header is landfill_cost_SGD — log the sum of landfillCostPerMat[]
 // (landfill EmbeddedObject removed in CE3.0 Phase 2; totalWasteReceived tracked in Intermediate)
 landfillLog.add(java.util.Arrays.stream(landfillCostPerMat).sum());
+
+// 7b. SYMBIOTIC COEFFICIENT — entity-level + network-level (a posteriori KPI)
+//     n_prov = totalMassDispatched / totalWasteGenerated  (Provider: share of generated waste sent to IS)
+//     n_rec  = totalReceivedFromIS / (totalReceivedFromIS + totalVirginPurchased)  (Receiver: share of demand met by IS)
+//     n_net  = totalSecondaryMaterial / (totalSecondaryMaterial + totalVirginMaterial)  (Network: IS fraction of all material flows)
+//     Reference: He et al. (2020) JCP 251:119417 — concept adapted as emergent a posteriori metric
+for (Provider prov : providers) {
+    prov.symbioticCoefficient = prov.totalWasteGenerated > 0
+        ? prov.totalMassDispatched / prov.totalWasteGenerated
+        : 0.0;
+}
+for (Receiver rec : receivers) {
+    double recTotalMat = rec.totalReceivedFromIS + rec.totalVirginPurchased;
+    rec.symbioticCoefficient = recTotalMat > 0
+        ? rec.totalReceivedFromIS / recTotalMat
+        : 0.0;
+}
+double netTotalMat = totalSecondaryMaterial + totalVirginMaterial;
+networkSymbioticCoefficient = netTotalMat > 0
+    ? totalSecondaryMaterial / netTotalMat
+    : 0.0;
+traceln(String.format(
+    "[CE3] Year %.0f | n_net=%.3f | n_rec_avg=%.3f | n_prov_avg=%.3f",
+    currentYear, networkSymbioticCoefficient,
+    receivers.stream().mapToDouble(r -> r.symbioticCoefficient).average().orElse(0.0),
+    providers.stream().mapToDouble(p -> p.symbioticCoefficient).average().orElse(0.0)));
 
 // 8. PREPARE FOR NEXT YEAR
 lastYearNetBalance = currentNetBalance;
@@ -3735,6 +3777,77 @@ if (currentYear >= 10) {
 					<FillAreaUnderLine>false</FillAreaUnderLine>
 					<LabelFormat>MODEL_TIME_UNITS</LabelFormat>
     			</TimePlot>
+    			
+    			<TimePlot>
+    				<Id>9900000000011</Id>
+    				<Name><![CDATA[plotSymbioticCoeff]]></Name>
+    				<X>1600</X><Y>1930</Y>
+    				<Label><X>0</X><Y>-10</Y></Label>
+    				<PublicFlag>true</PublicFlag>
+    				<PresentationFlag>true</PresentationFlag>
+    				<ShowLabel>false</ShowLabel>
+    				<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+    				<AutoUpdate>true</AutoUpdate>
+    				<RecurrenceProperties>
+    					<Id>9900000000012</Id>
+    					<OccurrenceAtTime>true</OccurrenceAtTime>
+    					<OccurrenceDate>1772179200000</OccurrenceDate>
+    					<OccurrenceTime Class="CodeUnitValue">
+    						<Code><![CDATA[0]]></Code>
+    						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+    					</OccurrenceTime>
+    					<RecurrenceCode Class="CodeUnitValue">
+    						<Code><![CDATA[365]]></Code>
+    						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+    					</RecurrenceCode>
+    				</RecurrenceProperties>
+    				<EmbeddedIcon>false</EmbeddedIcon>
+    				<Width>600</Width>
+    				<Height>480</Height>
+    				<BackgroundColor/>
+    				<BorderColor/>
+    				<ChartArea>
+    					<XOffset>50</XOffset>
+    					<YOffset>30</YOffset>
+    					<Width>520</Width>
+    					<Height>390</Height>
+    					<BackgroundColor>-1</BackgroundColor>
+    					<BorderColor>-16777216</BorderColor>
+    					<GridColor>-12566464</GridColor>
+    				</ChartArea>
+    				<Legend>
+    					<Place>SOUTH</Place>
+    					<TextColor>-16777216</TextColor>
+    					<Size>30</Size>
+    				</Legend>
+    				<Labels>
+    					<HorLabelsPosition>DEFAULT</HorLabelsPosition>
+    					<VerLabelsPosition>DEFAULT</VerLabelsPosition>
+    					<TextColor>-12566464</TextColor>
+    				</Labels>
+    				<ShowLegend>true</ShowLegend>
+    				<TimeWindowsMovementType>MOVEMENT_WITH_TIME</TimeWindowsMovementType>		
+    				<TimeWindowUnits>YEAR</TimeWindowUnits>
+    				<VerScaleFromExpression><![CDATA[0]]></VerScaleFromExpression>
+    				<VerScaleToExpression><![CDATA[1]]></VerScaleToExpression>
+    				<VerScaleType>AUTO</VerScaleType>
+    				<DrawLine>true</DrawLine>
+    				<Interpolation>LINEAR</Interpolation>
+    				<DatasetExpression>  
+    					<Title><![CDATA[Network Symbiotic Coefficient n]]></Title>
+    				<Id>9900000000013</Id>
+    				<Expression><![CDATA[my_dataset]]></Expression>
+    				<Color>-13388314</Color>
+    				<Expression2><![CDATA[networkSymbioticCoefficient]]></Expression2>
+    				<Expression2Flag>true</Expression2Flag>
+    					<PointStyle>NONE</PointStyle>
+    					<LineWidth>3.0</LineWidth>
+    				</DatasetExpression>
+    				<SamplesToKeep>10</SamplesToKeep>
+    				<TimeWindowExpression><![CDATA[10]]></TimeWindowExpression>
+    				<FillAreaUnderLine>false</FillAreaUnderLine>
+    				<LabelFormat>MODEL_TIME_UNITS</LabelFormat>
+    			</TimePlot>
     			<TimePlot>
 					<Id>9940000000001</Id>
 					<Name><![CDATA[plotTransportCost]]></Name>
@@ -4692,6 +4805,38 @@ if (currentYear >= 10) {
 					</Properties>
 				</Variable>
 				<Variable Class="PlainVariable">
+					<Id>9950000000022</Id>
+					<Name><![CDATA[totalWasteGenerated]]></Name>
+					<Description><![CDATA[Total tonnes of waste generated by this Provider (all cycles, IS + noIS). Denominator for provider-level symbiotic coefficient: n_prov = totalMassDispatched / totalWasteGenerated. Incremented each generation cycle regardless of IS acceptance.]]></Description>
+					<X>820</X><Y>1840</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>false</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9950000000023</Id>
+					<Name><![CDATA[symbioticCoefficient]]></Name>
+					<Description><![CDATA[Provider-level symbiotic coefficient (a posteriori): fraction of total waste generated channelled via the IS pathway. n_prov = totalMassDispatched / totalWasteGenerated. Range [0,1]. Computed annually in Main.annualFinancialUpdate. Ref: He et al. (2020) JCP 251:119417.]]></Description>
+					<X>820</X><Y>1858</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>false</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
 					<Id>9901000000001</Id>
 					<Name><![CDATA[pendingWaste]]></Name>
 					<Description><![CDATA[Waste (t) accepted by Intermediate storage but not yet collected because no truck was available. Accumulated until truckRetryEvent dispatches a truck.]]></Description>
@@ -4818,6 +4963,7 @@ rawWaste     = Math.max(avgSupplyFromExcel * 0.01,
 // Normal dist, CV=supplyVariability. Floor = 1% of avg supply so rawWaste is never 0
 // (companies always generate some waste; zero-weeks would skip IS dispatch entirely).
 currentSupply = rawWaste;
+totalWasteGenerated += rawWaste; // accumulate all generated waste for symbiotic coefficient (He et al. 2020)
 bookingAccepted = false;
 myActivityLog.add(String.format("Day%7.1f | GENERATED  | %.3f t %s",
     time(DAY), rawWaste, myMaterial));
@@ -7317,6 +7463,22 @@ else return black;]]></Body>
 						<Type><![CDATA[double]]></Type>        
 						<InitialValue Class="CodeValue">
 							<Code><![CDATA[0]]></Code>
+						</InitialValue>
+					</Properties>
+				</Variable>
+				<Variable Class="PlainVariable">
+					<Id>9904000000030</Id>
+					<Name><![CDATA[symbioticCoefficient]]></Name>
+					<Description><![CDATA[Receiver-level symbiotic coefficient (a posteriori): fraction of total material demand met by IS secondary material. n_rec = totalReceivedFromIS / (totalReceivedFromIS + totalVirginPurchased). Range [0,1]. Computed annually in Main.annualFinancialUpdate. Ref: He et al. (2020) JCP 251:119417.]]></Description>
+					<X>260</X><Y>540</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>false</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" Constant="false" AccessType="public" StaticVariable="false">
+						<Type><![CDATA[double]]></Type>        
+						<InitialValue Class="CodeValue">
+							<Code><![CDATA[0.0]]></Code>
 						</InitialValue>
 					</Properties>
 				</Variable>
