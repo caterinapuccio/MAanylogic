@@ -183,14 +183,10 @@ double[] pricePaidToProvider  = new double[6];  // SGD/t (neg=provider pays, pos
 // pw_* = fate of recycling residue (processWaste = rawBuffer*(1-convEff)) at BIWASE hub
 // Sources: Vietnam plastic 2024 (ET Journal); Vietnam TV MFA 2018 (RCR); Thai Al LCA 2025 (IOP);
 //          SE Asia MSW 2023 (Sustainability); Textile waste 2024 (Energies)
-double[] pw_landfillSharePerMat     = {0.74, 0.89, 0.94, 0.56, 0.89, 0.86};  // normalised: LF+incin=1.0 per material; [5]=ORGANIC_WASTE [ASSUMED]
-double[] pw_incinerationSharePerMat = {0.26, 0.11, 0.06, 0.44, 0.11, 0.14};  // normalised: LF+incin=1.0 per material; [5]=ORGANIC_WASTE [ASSUMED]
+double[] pw_landfillSharePerMat     = new double[6]; // loaded from Materials sheet col W (row 3-8)
+double[] pw_incinerationSharePerMat = new double[6]; // loaded from Materials sheet col X (row 3-8)
 // noIS disposal: fate of waste when provider does NOT enter IS network (BAU baseline)
 // [0] PLASTIC, [1] PAPER: same as pw_* arrays — modeling assumption subject to sensitivity analysis [ASSUMED]
-// [2] FERROUS, [4] NON_FERROUS: low shares reflect informal scrap dealer diversion (Wilson et al. 2006; Nguyen et al. 2019) [LIT]
-// [3] TEXTILE: higher incineration consistent with mixed-fibre low recyclability [ASSUMED]
-double[] noIS_landfillShare         = {0.70, 0.80, 0.15, 0.55, 0.15, 0.50};  // [5]=ORGANIC_WASTE 50% landfill [ASSUMED] xxx: 50/50 organic MSW split needs consensus — futurenotes [17]
-double[] noIS_incinerationShare     = {0.25, 0.10, 0.05, 0.35, 0.05, 0.50};  // [5]=ORGANIC_WASTE 50% incineration [ASSUMED] xxx: 50/50 organic MSW split needs consensus — futurenotes [17]
 // Ash fractions (read from Excel Intermediate sheet rows 26-27)
 double bottomAsh_massFraction = 0.25;  // mass fraction of incinerated waste → bottom ash
 double flyAsh_massFraction    = 0.04;  // mass fraction → fly ash (hazardous)
@@ -835,6 +831,8 @@ for (int m = 0; m < MaterialType.values().length; m++) {
     priceSecondaryPerMat[m]  = Input_data.getCellNumericValue("Materials", row, 16); // Col P — recycled/secondary sale price
     costLandfillPerMat[m]    = Input_data.getCellNumericValue("Materials", row, 17); // Col Q — landfill disposal cost
     pricePaidToProvider[m]   = Input_data.getCellNumericValue("Materials", row, 22); // Col V — payment to/from provider
+    pw_landfillSharePerMat[m]    = Input_data.getCellNumericValue("Materials", row, 23); // Col W — process waste landfill share
+    pw_incinerationSharePerMat[m] = Input_data.getCellNumericValue("Materials", row, 24); // Col X — process waste incineration share
     traceln("  m=" + m + " convEff=" + conversionEffPerMat[m]
         + " priceV=" + priceVirginPerMat[m] + " priceSec=" + priceSecondaryPerMat[m]
         + " costLF=" + costLandfillPerMat[m] + " provPay=" + pricePaidToProvider[m]);
@@ -871,14 +869,12 @@ investedStorageCapacity    = intTotalStorage;
 
 // ─── Process waste fate parameters (arrays hard-coded; ash fractions from Excel) ─
 // pw_landfillSharePerMat / pw_incinerationSharePerMat : Consensus-backed arrays (initialized inline above)
-// noIS_landfillShare / noIS_incinerationShare          : Consensus-backed arrays (initialized inline above)
+// pw_landfillSharePerMat / pw_incinerationSharePerMat  : loaded from Materials sheet cols W/X (rows 3-8)
 // pw_otherShare = 1 - landfill - incineration (closure term, computed in recyclingProcessing())
 bottomAsh_massFraction = Input_data.getCellNumericValue("Intermediate", 26, 2); // 0.25
 flyAsh_massFraction    = Input_data.getCellNumericValue("Intermediate", 27, 2); // 0.04
 traceln("CE3.0: pw_landfillSharePerMat="     + java.util.Arrays.toString(pw_landfillSharePerMat));
 traceln("CE3.0: pw_incinerationSharePerMat=" + java.util.Arrays.toString(pw_incinerationSharePerMat));
-traceln("CE3.0: noIS_landfillShare="         + java.util.Arrays.toString(noIS_landfillShare));
-traceln("CE3.0: noIS_incinerationShare="     + java.util.Arrays.toString(noIS_incinerationShare));
 traceln("CE3.0: bottomAsh_massFraction=" + bottomAsh_massFraction
     + " flyAsh_massFraction=" + flyAsh_massFraction);
 
@@ -5127,9 +5123,9 @@ double distEoL = main.haversineKm(providerLat, providerLon,
                                    main.intermediateLat, main.intermediateLon);
 
 // ── Financial: material-specific disposal cost (landfill share × costLandfill as proxy) ──────────────────────────
-// noIS_landfillShare / noIS_incinerationShare per material (Consensus-validated 2026-04-02)
-double noIS_lf_frac    = main.noIS_landfillShare[matIdx];      // fraction to landfill/open dump
-double noIS_incin_frac = main.noIS_incinerationShare[matIdx];  // fraction to incineration/open burning
+// pw_landfillSharePerMat / pw_incinerationSharePerMat per material (loaded from Excel, Consensus-validated 2026-04-22)
+double noIS_lf_frac    = main.pw_landfillSharePerMat[matIdx];      // fraction to landfill/open dump
+double noIS_incin_frac = main.pw_incinerationSharePerMat[matIdx];  // fraction to incineration/open burning
 // Financial: landfill cost applied to the landfill+other fraction (incineration cost not parameterized yet)
 double disposalCost = rawWaste * noIS_lf_frac * main.costLandfillPerMat[matIdx]
                     + rawWaste * noIS_incin_frac * main.costLandfillPerMat[matIdx]; // incineration ≈ landfill cost proxy
